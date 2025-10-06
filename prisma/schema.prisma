@@ -1,0 +1,1053 @@
+// OSDM Platform - Complete Database Schema
+// Combining Gumroad, Picalica, Fiverr, Khamsat, Upwork, Mostaql, Bahr functionalities
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS & AUTHENTICATION
+// ============================================
+
+enum UserRole {
+  BUYER
+  SELLER
+  ADMIN
+  FREELANCER
+}
+
+enum AccountType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  username          String              @unique
+  password          String
+  fullName          String
+  phone             String?
+  avatar            String?
+  role              UserRole            @default(BUYER)
+  accountType       AccountType         @default(INDIVIDUAL)
+  isEmailVerified   Boolean             @default(false)
+  isPhoneVerified   Boolean             @default(false)
+  twoFactorEnabled  Boolean             @default(false)
+  twoFactorSecret   String?
+  verificationStatus VerificationStatus @default(PENDING)
+
+  // Company specific fields
+  companyName       String?
+  companyRegistration String?
+  taxNumber         String?
+
+  // Location
+  country           String?
+  city              String?
+  address           String?
+
+  // Settings
+  language          String              @default("ar")
+  timezone          String              @default("Asia/Riyadh")
+  currency          String              @default("SAR")
+
+  // Financial
+  balance           Float               @default(0)
+  pendingBalance    Float               @default(0)
+  totalEarnings     Float               @default(0)
+
+  // Stats
+  totalSales        Int                 @default(0)
+  totalPurchases    Int                 @default(0)
+  averageRating     Float               @default(0)
+  totalReviews      Int                 @default(0)
+
+  // Status
+  isActive          Boolean             @default(true)
+  isSuspended       Boolean             @default(false)
+  suspensionReason  String?
+  lastLoginAt       DateTime?
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  // Relations
+  sellerProfile     SellerProfile?
+  freelancerProfile FreelancerProfile?
+  readyProducts     ReadyProduct[]
+  customServices    CustomService[]
+  projects          Project[]
+  proposals         Proposal[]
+  orders            Order[]
+  purchases         Order[]             @relation("buyer")
+  reviews           Review[]
+  receivedReviews   Review[]            @relation("reviewee")
+  sentMessages      Message[]           @relation("sender")
+  receivedMessages  Message[]           @relation("receiver")
+  notifications     Notification[]
+  favorites         Favorite[]
+  cartItems         CartItem[]
+  transactions      Transaction[]
+  withdrawals       Withdrawal[]
+  disputes          Dispute[]
+  reportsMade       Report[]            @relation("reporter")
+  reportsReceived   Report[]            @relation("reported")
+  sessions          Session[]
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+}
+
+// ============================================
+// SELLER & FREELANCER PROFILES
+// ============================================
+
+model SellerProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Profile
+  bio               String?
+  skills            String[]
+  languages         String[]
+  certifications    String[]
+  portfolio         String[]
+
+  // Business Info
+  businessName      String?
+  businessType      String?
+  website           String?
+  socialLinks       Json?
+
+  // Verification
+  idDocument        String?
+  businessLicense   String?
+  verifiedBadge     Boolean   @default(false)
+  topRatedBadge     Boolean   @default(false)
+
+  // Stats
+  responseTime      Int?      // in minutes
+  deliveryRate      Float     @default(100)
+  completionRate    Float     @default(100)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model FreelancerProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Profile
+  title             String?
+  bio               String?
+  hourlyRate        Float?
+  skills            String[]
+  languages         String[]
+  education         Json[]
+  experience        Json[]
+  certifications    String[]
+  portfolio         String[]
+
+  // Availability
+  availability      String    @default("AVAILABLE") // AVAILABLE, BUSY, UNAVAILABLE
+  hoursPerWeek      Int?
+
+  // Verification
+  verifiedBadge     Boolean   @default(false)
+  topRatedBadge     Boolean   @default(false)
+
+  // Stats
+  successRate       Float     @default(100)
+  responseTime      Int?
+  totalJobs         Int       @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================
+// READY PRODUCTS (Gumroad/Picalica Style)
+// ============================================
+
+enum ProductStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  SUSPENDED
+}
+
+enum ProductType {
+  EBOOK
+  TEMPLATE
+  COURSE
+  AUDIO
+  VIDEO
+  SOFTWARE
+  PLUGIN
+  THEME
+  GRAPHIC
+  MUSIC
+  FONT
+  STOCK_PHOTO
+  THREE_D_MODEL
+  GAME_ASSET
+  NFT
+  OTHER
+}
+
+model ReadyProduct {
+  id                String          @id @default(cuid())
+  sellerId          String
+  seller            User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  title             String
+  slug              String          @unique
+  description       String
+  shortDescription  String?
+
+  // Category & Tags
+  category          String
+  subCategory       String?
+  tags              String[]
+  productType       ProductType
+
+  // Media
+  thumbnail         String
+  images            String[]
+  previewVideo      String?
+  demoUrl           String?
+
+  // Pricing
+  price             Float
+  compareAtPrice    Float?
+  currency          String          @default("SAR")
+  isOnSale          Boolean         @default(false)
+  salePrice         Float?
+  saleEndsAt        DateTime?
+
+  // Product Files
+  files             ProductFile[]
+  fileSize          String?
+  fileFormat        String?
+  downloadLimit     Int?            // null = unlimited
+
+  // Licensing
+  licenseType       String          @default("PERSONAL") // PERSONAL, COMMERCIAL, EXTENDED
+  licenseDetails    String?
+
+  // SEO
+  metaTitle         String?
+  metaDescription   String?
+
+  // Settings
+  status            ProductStatus   @default(DRAFT)
+  isDigital         Boolean         @default(true)
+  requiresShipping  Boolean         @default(false)
+
+  // Stats
+  views             Int             @default(0)
+  likes             Int             @default(0)
+  sales             Int             @default(0)
+  revenue           Float           @default(0)
+  averageRating     Float           @default(0)
+  totalReviews      Int             @default(0)
+
+  // Timestamps
+  publishedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  orders            OrderItem[]
+  reviews           Review[]
+  favorites         Favorite[]
+
+  @@index([sellerId])
+  @@index([slug])
+  @@index([category])
+  @@index([status])
+  @@index([publishedAt])
+}
+
+model ProductFile {
+  id                String        @id @default(cuid())
+  productId         String
+  product           ReadyProduct  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  fileName          String
+  fileUrl           String
+  fileSize          Int           // in bytes
+  fileType          String
+  isMainFile        Boolean       @default(false)
+  order             Int           @default(0)
+
+  createdAt         DateTime      @default(now())
+
+  @@index([productId])
+}
+
+// ============================================
+// CUSTOM SERVICES (Fiverr/Khamsat Style)
+// ============================================
+
+enum ServiceStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  REJECTED
+  SUSPENDED
+}
+
+enum DeliveryTime {
+  ONE_DAY
+  TWO_DAYS
+  THREE_DAYS
+  FIVE_DAYS
+  SEVEN_DAYS
+  TEN_DAYS
+  FOURTEEN_DAYS
+  TWENTY_ONE_DAYS
+  THIRTY_DAYS
+  CUSTOM
+}
+
+model CustomService {
+  id                String          @id @default(cuid())
+  sellerId          String
+  seller            User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  title             String
+  slug              String          @unique
+  description       String
+  shortDescription  String?
+
+  // Category & Tags
+  category          String
+  subCategory       String?
+  tags              String[]
+
+  // Media
+  thumbnail         String
+  images            String[]
+  video             String?
+
+  // Pricing Tiers (Basic, Standard, Premium)
+  packages          ServicePackage[]
+
+  // Delivery
+  deliveryTime      DeliveryTime
+  customDeliveryDays Int?
+  revisions         Int             @default(0) // 0 = unlimited
+
+  // Requirements
+  requirements      Json[]          // Questions for buyer
+
+  // SEO
+  metaTitle         String?
+  metaDescription   String?
+
+  // Settings
+  status            ServiceStatus   @default(DRAFT)
+  queueLength       Int             @default(0)
+  maxOrdersInQueue  Int             @default(5)
+
+  // Stats
+  views             Int             @default(0)
+  favorites         Int             @default(0)
+  orders            Int             @default(0)
+  completedOrders   Int             @default(0)
+  averageRating     Float           @default(0)
+  totalReviews      Int             @default(0)
+
+  // Timestamps
+  publishedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  orderItems        OrderItem[]
+  reviews           Review[]
+  favoritesList     Favorite[]
+
+  @@index([sellerId])
+  @@index([slug])
+  @@index([category])
+  @@index([status])
+}
+
+model ServicePackage {
+  id                String          @id @default(cuid())
+  serviceId         String
+  service           CustomService   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  name              String          // BASIC, STANDARD, PREMIUM
+  description       String
+  price             Float
+  deliveryDays      Int
+  revisions         Int             @default(0)
+  features          String[]
+
+  order             Int             @default(0)
+
+  @@index([serviceId])
+}
+
+// ============================================
+// FREELANCE PROJECTS (Upwork/Mostaql/Bahr Style)
+// ============================================
+
+enum ProjectStatus {
+  DRAFT
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum ProjectBudgetType {
+  FIXED
+  HOURLY
+}
+
+enum ProjectSize {
+  SMALL      // < 1 month
+  MEDIUM     // 1-3 months
+  LARGE      // 3-6 months
+  COMPLEX    // 6+ months
+}
+
+enum ProjectExperienceLevel {
+  ENTRY
+  INTERMEDIATE
+  EXPERT
+}
+
+model Project {
+  id                String                  @id @default(cuid())
+  clientId          String
+  client            User                    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  title             String
+  slug              String                  @unique
+  description       String
+
+  // Category & Skills
+  category          String
+  subCategory       String?
+  skills            String[]
+
+  // Budget
+  budgetType        ProjectBudgetType
+  fixedBudget       Float?
+  hourlyRateMin     Float?
+  hourlyRateMax     Float?
+  estimatedHours    Int?
+  currency          String                  @default("SAR")
+
+  // Project Details
+  projectSize       ProjectSize
+  experienceLevel   ProjectExperienceLevel
+  duration          String?
+
+  // Attachments
+  attachments       String[]
+
+  // Requirements
+  requirements      Json[]
+
+  // Settings
+  status            ProjectStatus           @default(DRAFT)
+  isPrivate         Boolean                 @default(false)
+  isFeatured        Boolean                 @default(false)
+
+  // Freelancer Selection
+  selectedFreelancerId String?
+
+  // Stats
+  views             Int                     @default(0)
+  proposalsCount    Int                     @default(0)
+
+  // Timestamps
+  publishedAt       DateTime?
+  deadline          DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  // Relations
+  proposals         Proposal[]
+  milestones        Milestone[]
+
+  @@index([clientId])
+  @@index([slug])
+  @@index([category])
+  @@index([status])
+}
+
+model Proposal {
+  id                String        @id @default(cuid())
+  projectId         String
+  project           Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  freelancerId      String
+  freelancer        User          @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+
+  // Proposal Details
+  coverLetter       String
+  proposedBudget    Float
+  proposedDuration  Int           // in days
+  milestones        Json[]
+
+  // Attachments
+  attachments       String[]
+  portfolio         String[]
+
+  // Status
+  status            String        @default("PENDING") // PENDING, ACCEPTED, REJECTED, WITHDRAWN
+
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([freelancerId])
+  @@index([status])
+}
+
+model Milestone {
+  id                String        @id @default(cuid())
+  projectId         String
+  project           Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  title             String
+  description       String?
+  amount            Float
+  dueDate           DateTime?
+
+  status            String        @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, APPROVED, PAID
+
+  // Deliverables
+  deliverables      String[]
+  submittedAt       DateTime?
+  approvedAt        DateTime?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([projectId])
+}
+
+// ============================================
+// ORDERS & TRANSACTIONS
+// ============================================
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  MADA
+  VISA
+  MASTERCARD
+  APPLE_PAY
+  STC_PAY
+  PAYPAL
+  WALLET
+}
+
+model Order {
+  id                String          @id @default(cuid())
+  orderNumber       String          @unique
+
+  buyerId           String
+  buyer             User            @relation("buyer", fields: [buyerId], references: [id])
+
+  sellerId          String
+  seller            User            @relation(fields: [sellerId], references: [id])
+
+  // Order Details
+  items             OrderItem[]
+
+  // Pricing
+  subtotal          Float
+  platformFee       Float
+  taxAmount         Float
+  discount          Float           @default(0)
+  total             Float
+  currency          String          @default("SAR")
+
+  // Payment
+  paymentStatus     PaymentStatus   @default(PENDING)
+  paymentMethod     PaymentMethod?
+  paymentIntentId   String?
+  paidAt            DateTime?
+
+  // Delivery
+  deliveryDate      DateTime?
+  completedAt       DateTime?
+
+  // Status
+  status            OrderStatus     @default(PENDING)
+
+  // Notes
+  buyerNote         String?
+  sellerNote        String?
+  adminNote         String?
+
+  // Cancellation/Refund
+  cancellationReason String?
+  refundAmount      Float?
+  refundedAt        DateTime?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  transactions      Transaction[]
+  dispute           Dispute?
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([orderNumber])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id                String          @id @default(cuid())
+  orderId           String
+  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Product/Service Reference
+  readyProductId    String?
+  readyProduct      ReadyProduct?   @relation(fields: [readyProductId], references: [id])
+
+  customServiceId   String?
+  customService     CustomService?  @relation(fields: [customServiceId], references: [id])
+
+  // Item Details
+  title             String
+  description       String?
+  packageName       String?         // For custom services
+
+  // Pricing
+  price             Float
+  quantity          Int             @default(1)
+  total             Float
+
+  // Requirements (for custom services)
+  requirements      Json?
+
+  // Delivery
+  deliveryDays      Int?
+  revisions         Int             @default(0)
+
+  // Files (for ready products)
+  downloadedAt      DateTime?
+  downloadCount     Int             @default(0)
+
+  createdAt         DateTime        @default(now())
+
+  @@index([orderId])
+  @@index([readyProductId])
+  @@index([customServiceId])
+}
+
+// ============================================
+// PAYMENTS & TRANSACTIONS
+// ============================================
+
+enum TransactionType {
+  PURCHASE
+  SALE
+  REFUND
+  WITHDRAWAL
+  COMMISSION
+  BONUS
+  PENALTY
+}
+
+model Transaction {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+
+  orderId           String?
+  order             Order?          @relation(fields: [orderId], references: [id])
+
+  type              TransactionType
+  amount            Float
+  currency          String          @default("SAR")
+
+  // Fees
+  platformFee       Float           @default(0)
+  paymentFee        Float           @default(0)
+  taxAmount         Float           @default(0)
+  netAmount         Float
+
+  // Balance
+  balanceBefore     Float
+  balanceAfter      Float
+
+  // Payment Details
+  paymentMethod     PaymentMethod?
+  paymentReference  String?
+
+  description       String?
+  metadata          Json?
+
+  createdAt         DateTime        @default(now())
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model Withdrawal {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+
+  amount            Float
+  currency          String          @default("SAR")
+
+  // Bank Details
+  bankName          String
+  accountNumber     String
+  accountName       String
+  iban              String?
+
+  status            String          @default("PENDING") // PENDING, PROCESSING, COMPLETED, REJECTED
+
+  processedAt       DateTime?
+  completedAt       DateTime?
+
+  adminNote         String?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// REVIEWS & RATINGS
+// ============================================
+
+model Review {
+  id                String          @id @default(cuid())
+
+  reviewerId        String
+  reviewer          User            @relation(fields: [reviewerId], references: [id])
+
+  revieweeId        String
+  reviewee          User            @relation("reviewee", fields: [revieweeId], references: [id])
+
+  orderId           String?
+
+  // For Ready Products
+  readyProductId    String?
+  readyProduct      ReadyProduct?   @relation(fields: [readyProductId], references: [id])
+
+  // For Custom Services
+  customServiceId   String?
+  customService     CustomService?  @relation(fields: [customServiceId], references: [id])
+
+  // Review Content
+  rating            Int             // 1-5
+  title             String?
+  comment           String
+
+  // Detailed Ratings
+  communicationRating Int?
+  qualityRating     Int?
+  deliveryRating    Int?
+  valueRating       Int?
+
+  // Response
+  sellerResponse    String?
+  sellerRespondedAt DateTime?
+
+  // Status
+  isPublished       Boolean         @default(true)
+  isVerified        Boolean         @default(false)
+
+  // Helpful votes
+  helpfulCount      Int             @default(0)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([reviewerId])
+  @@index([revieweeId])
+  @@index([readyProductId])
+  @@index([customServiceId])
+  @@index([rating])
+}
+
+// ============================================
+// MESSAGING & NOTIFICATIONS
+// ============================================
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+model Message {
+  id                String          @id @default(cuid())
+
+  senderId          String
+  sender            User            @relation("sender", fields: [senderId], references: [id])
+
+  receiverId        String
+  receiver          User            @relation("receiver", fields: [receiverId], references: [id])
+
+  // Message Content
+  subject           String?
+  content           String
+  attachments       String[]
+
+  // Order Reference (if related to order)
+  orderId           String?
+
+  // Status
+  status            MessageStatus   @default(SENT)
+  readAt            DateTime?
+
+  // Thread
+  parentId          String?
+  threadId          String?
+
+  createdAt         DateTime        @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([threadId])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  ORDER
+  MESSAGE
+  REVIEW
+  PAYMENT
+  SYSTEM
+  MARKETING
+}
+
+model Notification {
+  id                String            @id @default(cuid())
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type              NotificationType
+  title             String
+  message           String
+
+  link              String?
+  metadata          Json?
+
+  isRead            Boolean           @default(false)
+  readAt            DateTime?
+
+  createdAt         DateTime          @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ============================================
+// FAVORITES & CART
+// ============================================
+
+model Favorite {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  readyProductId    String?
+  readyProduct      ReadyProduct?   @relation(fields: [readyProductId], references: [id], onDelete: Cascade)
+
+  customServiceId   String?
+  customService     CustomService?  @relation(fields: [customServiceId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime        @default(now())
+
+  @@unique([userId, readyProductId])
+  @@unique([userId, customServiceId])
+  @@index([userId])
+}
+
+model CartItem {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  readyProductId    String?
+  customServiceId   String?
+
+  packageId         String?         // For service packages
+  quantity          Int             @default(1)
+
+  // Custom requirements for services
+  requirements      Json?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================
+// DISPUTES & REPORTS
+// ============================================
+
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+model Dispute {
+  id                String          @id @default(cuid())
+  orderId           String          @unique
+  order             Order           @relation(fields: [orderId], references: [id])
+
+  openedBy          String
+  reason            String
+  description       String
+  evidence          String[]
+
+  status            DisputeStatus   @default(OPEN)
+
+  resolution        String?
+  resolvedBy        String?
+  resolvedAt        DateTime?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model Report {
+  id                String          @id @default(cuid())
+
+  reporterId        String
+  reporter          User            @relation("reporter", fields: [reporterId], references: [id])
+
+  reportedId        String
+  reported          User            @relation("reported", fields: [reportedId], references: [id])
+
+  type              String          // USER, PRODUCT, SERVICE, PROJECT, REVIEW
+  targetId          String
+
+  reason            String
+  description       String
+  evidence          String[]
+
+  status            String          @default("PENDING") // PENDING, REVIEWING, RESOLVED, DISMISSED
+
+  adminNote         String?
+  resolvedAt        DateTime?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([reporterId])
+  @@index([reportedId])
+  @@index([status])
+}
+
+// ============================================
+// ADMIN & SETTINGS
+// ============================================
+
+model Session {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token             String          @unique
+  ipAddress         String?
+  userAgent         String?
+
+  expiresAt         DateTime
+  createdAt         DateTime        @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model PlatformSettings {
+  id                String          @id @default(cuid())
+  key               String          @unique
+  value             Json
+  description       String?
+
+  updatedAt         DateTime        @updatedAt
+
+  @@index([key])
+}
+
+model AuditLog {
+  id                String          @id @default(cuid())
+  userId            String?
+  action            String
+  entity            String
+  entityId          String?
+  details           Json?
+  ipAddress         String?
+
+  createdAt         DateTime        @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
