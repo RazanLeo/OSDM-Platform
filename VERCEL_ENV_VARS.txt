@@ -1,0 +1,103 @@
+# ========================================
+# 🚀 متغيرات البيئة للنشر على Vercel
+# ========================================
+# انسخي هذه المتغيرات والصقيها في Vercel Dashboard
+# Settings → Environment Variables → Add
+# ========================================
+
+# ========================================
+# 🔴 إلزامية - يجب إضافتها الآن
+# ========================================
+
+# قاعدة البيانات (احصلي عليه من Neon.tech)
+DATABASE_URL=postgresql://user:password@host.region.aws.neon.tech/osdm_db?sslmode=require
+
+# المصادقة (مهم جداً!)
+NEXTAUTH_URL=https://your-project-name.vercel.app
+NEXT_PUBLIC_BASE_URL=https://your-project-name.vercel.app
+NEXTAUTH_SECRET=قومي_بتوليد_مفتاح_من_هذا_الموقع_https://generate-secret.vercel.app/32
+
+# البريد الإلكتروني (Resend - مجاني)
+EMAIL_FROM=noreply@yourdomain.com
+RESEND_API_KEY=re_احصلي_عليه_من_https://resend.com
+
+# تخزين الملفات (Vercel Blob - سيتم إنشاؤه تلقائياً)
+BLOB_READ_WRITE_TOKEN=سيتم_إنشاؤه_من_Vercel_Storage
+
+# إعدادات المنصة
+PLATFORM_NAME=OSDM
+PLATFORM_URL=https://your-project-name.vercel.app
+SUPPORT_EMAIL=app.osdm@gmail.com
+SUPPORT_PHONE=+966544827213
+PLATFORM_FEE_PERCENTAGE=25
+
+# رسوم التسجيل (ريال سعودي)
+REGISTRATION_FEE_INDIVIDUAL=50
+REGISTRATION_FEE_COMPANY=500
+PRODUCT_LISTING_FEE=50
+
+# اشتراكات Premium (شهري - ريال)
+PREMIUM_SUBSCRIPTION_INDIVIDUAL=100
+PREMIUM_SUBSCRIPTION_STARTUP=500
+PREMIUM_SUBSCRIPTION_ENTERPRISE=1000
+
+# حساب الإدارة الافتراضي (غيري كلمة المرور بعد أول دخول!)
+ADMIN_EMAIL=razan@osdm.sa
+ADMIN_USERNAME=Razan@OSDM
+ADMIN_PASSWORD=RazanOSDM@056300
+
+# SEO
+NEXT_PUBLIC_SITE_NAME=OSDM - One Stop Digital Market
+NEXT_PUBLIC_SITE_DESCRIPTION=منصة سعودية رائدة تجمع كل المنتجات والخدمات الرقمية وفرص العمل الحر تحت سقف واحد
+
+# البيئة
+NODE_ENV=production
+DEBUG=false
+
+# ========================================
+# 🟡 بوابات الدفع - معطلة حالياً (اتركيها كما هي الآن)
+# ========================================
+# ⚠️ لا تضعي مفاتيح حقيقية الآن - فقط للتجربة!
+
+# Moyasar (السعودية) - معطل
+MOYASAR_API_KEY=pk_test_placeholder_key
+MOYASAR_SECRET_KEY=sk_test_placeholder_key
+
+# PayTabs (الخليج) - معطل
+PAYTABS_PROFILE_ID=placeholder_profile_id
+PAYTABS_SERVER_KEY=placeholder_server_key
+
+# PayPal (عالمي) - معطل (وضع التجربة)
+PAYPAL_CLIENT_ID=placeholder_client_id
+PAYPAL_CLIENT_SECRET=placeholder_client_secret
+PAYPAL_MODE=sandbox
+
+# ========================================
+# 🟢 اختيارية - يمكن إضافتها لاحقاً
+# ========================================
+
+# Google OAuth (اختياري)
+# GOOGLE_CLIENT_ID=your_id.apps.googleusercontent.com
+# GOOGLE_CLIENT_SECRET=your_secret
+
+# Pusher للرسائل الفورية (اختياري)
+# PUSHER_APP_ID=your_app_id
+# PUSHER_KEY=your_key
+# PUSHER_SECRET=your_secret
+# PUSHER_CLUSTER=ap2
+# NEXT_PUBLIC_PUSHER_KEY=your_key
+# NEXT_PUBLIC_PUSHER_CLUSTER=ap2
+
+# Google Analytics (اختياري)
+# NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+
+# ========================================
+# 📝 ملاحظات مهمة:
+# ========================================
+# 1. غيري "your-project-name" برابط مشروعك الحقيقي من Vercel
+# 2. DATABASE_URL: احصلي عليه من Neon (https://neon.tech)
+# 3. NEXTAUTH_SECRET: ولدي مفتاح قوي من (https://generate-secret.vercel.app/32)
+# 4. RESEND_API_KEY: احصلي عليه من (https://resend.com) - مجاني
+# 5. BLOB_READ_WRITE_TOKEN: سيتم إنشاؤه تلقائياً من Vercel Storage
+# 6. بوابات الدفع معطلة - لا تضعي مفاتيح حقيقية الآن
+# 7. غيري كلمة مرور الإدارة فوراً بعد أول دخول!
