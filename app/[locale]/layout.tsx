@@ -33,8 +33,19 @@ export default function LocaleLayout({
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <style>{`
+          @font-face {
+            font-family: 'DIN Next LT Arabic';
+            src: local('DIN Next LT Arabic'), local('DINNextLTArabic');
+            font-weight: 300 700;
+            font-display: swap;
+          }
+        `}</style>
       </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body
+        className="min-h-screen bg-background font-sans antialiased"
+        style={{ fontFamily: locale === 'ar' ? "'DIN Next LT Arabic', 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif" : "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+      >
         <Providers>
           <Header locale={locale} />
           <main className="min-h-screen">{children}</main>

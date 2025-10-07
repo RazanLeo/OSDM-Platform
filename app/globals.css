@@ -4,39 +4,44 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* OSDM Brand Colors */
+  --brand-purple: #846F9C;
+  --brand-teal: #4691A9;
+  --brand-sage: #89A58F;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: #846F9C;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: #4691A9;
+  --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
+  --ring: #846F9C;
+  --chart-1: #846F9C;
+  --chart-2: #4691A9;
+  --chart-3: #89A58F;
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: #846F9C;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: #846F9C;
 }
 
 .dark {
@@ -46,32 +51,32 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #846F9C;
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: #4691A9;
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.269 0 0);
   --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
+  --ring: #846F9C;
+  --chart-1: #846F9C;
+  --chart-2: #4691A9;
+  --chart-3: #89A58F;
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: #846F9C;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --sidebar-ring: #846F9C;
 }
 
 @theme inline {
@@ -121,4 +126,41 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@layer utilities {
+  /* OSDM Brand Gradients */
+  .gradient-primary {
+    background: linear-gradient(to right, #846F9C 0%, #846F9C 20%, #4691A9 50%, #89A58F 80%, #89A58F 100%);
+  }
+
+  .gradient-primary-hover {
+    background: linear-gradient(to right, #6f5a87 0%, #6f5a87 20%, #3a7a8e 50%, #74907a 80%, #74907a 100%);
+  }
+
+  .text-gradient-primary {
+    background: linear-gradient(to right, #846F9C 0%, #846F9C 20%, #4691A9 50%, #89A58F 80%, #89A58F 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Brand Colors as utilities */
+  .bg-brand-purple { background-color: #846F9C; }
+  .bg-brand-teal { background-color: #4691A9; }
+  .bg-brand-sage { background-color: #89A58F; }
+
+  .text-brand-purple { color: #846F9C; }
+  .text-brand-teal { color: #4691A9; }
+  .text-brand-sage { color: #89A58F; }
+
+  .border-brand-purple { border-color: #846F9C; }
+  .border-brand-teal { border-color: #4691A9; }
+  .border-brand-sage { border-color: #89A58F; }
+
+  /* RTL Support */
+  [dir="rtl"] .rtl\:text-right { text-align: right; }
+  [dir="rtl"] .rtl\:text-left { text-align: left; }
+  [dir="rtl"] .rtl\:mr-auto { margin-right: auto; }
+  [dir="rtl"] .rtl\:ml-auto { margin-left: auto; }
 }

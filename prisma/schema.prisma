@@ -1235,13 +1235,6 @@ enum ProjectBudgetType {
   HOURLY
 }
 
-enum ProjectSize {
-  SMALL      // < 1 month
-  MEDIUM     // 1-3 months
-  LARGE      // 3-6 months
-  COMPLEX    // 6+ months
-}
-
 enum ProjectExperienceLevel {
   ENTRY
   INTERMEDIATE
