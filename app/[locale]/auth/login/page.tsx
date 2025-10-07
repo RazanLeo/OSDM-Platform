@@ -1,13 +1,11 @@
 import { Suspense } from "react"
-import { useParams } from "next/navigation"
 import type { Locale } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/get-dictionary"
 import { LoginForm } from "@/components/auth/LoginForm"
 import { Loader2 } from "lucide-react"
 
-export default function LoginPage() {
-  const params = useParams()
-  const locale = params.locale as Locale
+export default function LoginPage({ params }: { params: { locale: Locale } }) {
+  const locale = params.locale
   const t = getDictionary(locale)
 
   return (
