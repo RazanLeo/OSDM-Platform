@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { locales, type Locale } from "@/lib/i18n/config"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Providers } from "@/components/providers"
 import "@/app/globals.css"
 
 export async function generateStaticParams() {
@@ -34,9 +35,11 @@ export default function LocaleLayout({
         />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
-        <Header locale={locale} />
-        <main className="min-h-screen">{children}</main>
-        <Footer locale={locale} />
+        <Providers>
+          <Header locale={locale} />
+          <main className="min-h-screen">{children}</main>
+          <Footer locale={locale} />
+        </Providers>
       </body>
     </html>
   )

@@ -114,6 +114,7 @@ export const translations = {
     username: "اسم المستخدم",
     password: "كلمة المرور",
     email: "البريد الإلكتروني",
+    emailOrUsername: "البريد الإلكتروني أو اسم المستخدم",
     fullName: "الاسم الكامل",
     accountType: "نوع الحساب",
     individual: "فرد",
@@ -126,6 +127,9 @@ export const translations = {
     dontHaveAccount: "ليس لديك حساب؟",
     loginHere: "سجل الدخول هنا",
     registerHere: "أنشئ حساب هنا",
+    invalidCredentials: "البريد الإلكتروني أو اسم المستخدم أو كلمة المرور غير صحيحة",
+    accountSuspended: "تم تعليق هذا الحساب. يرجى التواصل مع الدعم الفني",
+    loginError: "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى",
   },
   en: {
     // Header
@@ -251,6 +255,7 @@ export const translations = {
     username: "Username",
     password: "Password",
     email: "Email",
+    emailOrUsername: "Email or Username",
     fullName: "Full Name",
     accountType: "Account Type",
     individual: "Individual",
@@ -263,6 +268,9 @@ export const translations = {
     dontHaveAccount: "Don't have an account?",
     loginHere: "Login here",
     registerHere: "Register here",
+    invalidCredentials: "Invalid email/username or password",
+    accountSuspended: "This account has been suspended. Please contact support",
+    loginError: "An error occurred during login. Please try again",
   },
 } as const
 
