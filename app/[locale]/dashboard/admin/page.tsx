@@ -7,7 +7,8 @@ import {
   AlertCircle, CheckCircle, XCircle, Clock, Star, Eye, Search,
   Filter, MoreVertical, Edit, Trash2, Ban, CheckCheck, FileText,
   BarChart3, PieChart, Activity, Wallet, CreditCard, Settings,
-  UserCheck, UserX, ShieldAlert, Download, ArrowUpRight, ArrowDownRight
+  UserCheck, UserX, ShieldAlert, Download, ArrowUpRight, ArrowDownRight,
+  MessageSquare
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
