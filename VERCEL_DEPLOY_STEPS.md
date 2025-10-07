@@ -57,7 +57,7 @@
 1. في صفحة Dashboard، اضغطي "Add New..."
 2. اختاري "Project"
 3. اختاري "Import Git Repository"
-4. ابحثي عن: `OSDM-Platfrom-V0-and-Claude`
+4. ابحثي عن: `OSDM-Platform`
 5. اضغطي "Import"
 6. ✅ سيفتح صفحة الإعدادات
 
