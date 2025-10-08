@@ -47,9 +47,7 @@ export async function POST(request: Request) {
         fullName: 'Razan OSDM Admin',
         password: hashedPassword,
         role: 'ADMIN',
-        isVerified: true,
-        status: 'ACTIVE',
-        phoneNumber: '+966500000000',
+        phone: '+966500000000',
         country: 'Saudi Arabia',
       },
     })
