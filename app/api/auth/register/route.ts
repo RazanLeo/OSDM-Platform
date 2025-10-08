@@ -72,11 +72,16 @@ export async function POST(request: NextRequest) {
     })
 
     // Create seller profile for all users (everyone can sell)
-    await prisma.sellerProfile.create({
-      data: {
-        userId: user.id,
-      }
-    })
+    try {
+      await prisma.sellerProfile.create({
+        data: {
+          userId: user.id,
+        }
+      })
+    } catch (profileError) {
+      console.error("Seller profile creation error:", profileError)
+      // Continue even if seller profile fails - user is created
+    }
 
     // Remove password from response
     const { password, ...userWithoutPassword } = user
