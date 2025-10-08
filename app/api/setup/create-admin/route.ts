@@ -56,13 +56,19 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Admin user created successfully!',
+      message: 'Admin user created successfully! ✅',
       credentials: {
         username: 'Razan@OSDM',
         password: 'RazanOSDM@056300',
         email: 'admin@osdm.com',
       },
       loginUrl: '/ar/auth/login',
+      admin: {
+        id: admin.id,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+      }
     })
   } catch (error: any) {
     console.error('Error creating admin:', error)

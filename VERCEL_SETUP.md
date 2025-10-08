@@ -8,7 +8,17 @@
 
 بعد أول نشر ناجح، يجب إنشاء البيانات الأولية:
 
-### الطريقة الأولى: من Vercel Dashboard
+### ✅ الطريقة الأسهل: استخدام صفحة الإعداد
+
+1. افتحي المتصفح واذهبي إلى:
+```
+https://your-domain.vercel.app/setup
+```
+
+2. اضغطي على "Create Admin User"
+3. ستحصلين على بيانات الدخول مباشرة!
+
+### الطريقة الثانية: من Vercel Dashboard
 
 1. اذهبي إلى: **Vercel Dashboard** → **OSDM Project** → **Storage** → **Postgres**
 2. افتحي **Query Console**
