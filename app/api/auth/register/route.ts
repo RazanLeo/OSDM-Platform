@@ -6,11 +6,11 @@ import { z } from "zod"
 const registerSchema = z.object({
   email: z.string().email("البريد الإلكتروني غير صحيح"),
   username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
-  password: z.string().min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل"),
+  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
   fullName: z.string().min(2, "الاسم الكامل مطلوب"),
-  phone: z.string().optional(),
-  accountType: z.enum(["INDIVIDUAL", "COMPANY"]),
-  role: z.enum(["BUYER", "SELLER", "FREELANCER"]),
+  phoneNumber: z.string().optional(),
+  accountType: z.string().optional(),
+  role: z.enum(["BUYER", "SELLER", "ADMIN"]),
 
   // Company fields
   companyName: z.string().optional(),
@@ -60,28 +60,22 @@ export async function POST(request: NextRequest) {
         username: validatedData.username,
         password: hashedPassword,
         fullName: validatedData.fullName,
-        phone: validatedData.phone,
+        phoneNumber: validatedData.phoneNumber,
         role: validatedData.role,
-        accountType: validatedData.accountType,
+        accountType: validatedData.accountType || 'individual',
         companyName: validatedData.companyName,
         companyRegistration: validatedData.companyRegistration,
         taxNumber: validatedData.taxNumber,
-        country: validatedData.country || "السعودية",
+        country: validatedData.country || "Saudi Arabia",
         city: validatedData.city,
+        isVerified: false,
+        status: 'ACTIVE',
       }
     })
 
-    // Create seller or freelancer profile if needed
+    // Create seller profile if needed
     if (validatedData.role === "SELLER") {
       await prisma.sellerProfile.create({
-        data: {
-          userId: user.id,
-        }
-      })
-    }
-
-    if (validatedData.role === "FREELANCER") {
-      await prisma.freelancerProfile.create({
         data: {
           userId: user.id,
         }
