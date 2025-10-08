@@ -67,10 +67,9 @@ export function LoginForm({ locale, translations: t }: LoginFormProps) {
 
         if (session?.user?.role === "ADMIN") {
           router.push(`/${locale}/dashboard/admin`)
-        } else if (session?.user?.role === "SELLER" || session?.user?.role === "FREELANCER") {
-          router.push(`/${locale}/dashboard/seller`)
         } else {
-          router.push(`/${locale}/dashboard/buyer`)
+          // All regular users go to unified dashboard
+          router.push(`/${locale}/dashboard`)
         }
 
         router.refresh()
