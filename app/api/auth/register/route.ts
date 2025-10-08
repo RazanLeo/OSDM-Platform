@@ -10,7 +10,7 @@ const registerSchema = z.object({
   fullName: z.string().min(2, "الاسم الكامل مطلوب"),
   phoneNumber: z.string().optional(),
   accountType: z.string().optional(),
-  role: z.enum(["BUYER", "SELLER", "ADMIN"]),
+  // No role - all users are regular USER role with buyer/seller capabilities
 
   // Company fields
   companyName: z.string().optional(),
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(validatedData.password, 12)
 
-    // Create user
+    // Create user - all users are regular users with buyer/seller access
     const user = await prisma.user.create({
       data: {
         email: validatedData.email,
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         fullName: validatedData.fullName,
         phoneNumber: validatedData.phoneNumber,
-        role: validatedData.role,
+        role: 'USER', // All registered users are USER role (not BUYER, SELLER, or ADMIN)
         accountType: validatedData.accountType || 'individual',
         companyName: validatedData.companyName,
         companyRegistration: validatedData.companyRegistration,
@@ -73,14 +73,12 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Create seller profile if needed
-    if (validatedData.role === "SELLER") {
-      await prisma.sellerProfile.create({
-        data: {
-          userId: user.id,
-        }
-      })
-    }
+    // Create seller profile for all users (everyone can sell)
+    await prisma.sellerProfile.create({
+      data: {
+        userId: user.id,
+      }
+    })
 
     // Remove password from response
     const { password, ...userWithoutPassword } = user

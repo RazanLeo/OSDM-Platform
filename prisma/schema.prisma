@@ -15,10 +15,8 @@ datasource db {
 // ============================================
 
 enum UserRole {
-  BUYER
-  SELLER
-  ADMIN
-  FREELANCER
+  USER        // Regular user (can buy AND sell)
+  ADMIN       // Platform admin (secret access)
 }
 
 enum AccountType {
@@ -40,7 +38,7 @@ model User {
   fullName          String
   phone             String?
   avatar            String?
-  role              UserRole            @default(BUYER)
+  role              UserRole            @default(USER)
   accountType       AccountType         @default(INDIVIDUAL)
   isEmailVerified   Boolean             @default(false)
   isPhoneVerified   Boolean             @default(false)

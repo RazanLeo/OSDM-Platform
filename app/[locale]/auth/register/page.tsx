@@ -31,7 +31,7 @@ export default function RegisterPage() {
     phoneNumber: "",
     country: "Saudi Arabia",
     accountType: "individual",
-    role: "BUYER" as "ADMIN" | "SELLER" | "BUYER",
+    // No role - every user has access to both buyer and seller features
   })
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -77,23 +77,6 @@ export default function RegisterPage() {
                 {error}
               </div>
             )}
-
-            <div className="space-y-2">
-              <Label htmlFor="role">{locale === 'ar' ? 'نوع الحساب' : 'Account Type'}</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value: "ADMIN" | "SELLER" | "BUYER") => setFormData({ ...formData, role: value })}
-              >
-                <SelectTrigger className="border-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BUYER">{locale === 'ar' ? '🛒 مشتري' : '🛒 Buyer'}</SelectItem>
-                  <SelectItem value="SELLER">{locale === 'ar' ? '💼 بائع' : '💼 Seller'}</SelectItem>
-                  <SelectItem value="ADMIN">{locale === 'ar' ? '👑 مدير' : '👑 Admin'}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="fullName">{t.fullName}</Label>

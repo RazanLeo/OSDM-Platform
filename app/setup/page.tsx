@@ -2,12 +2,27 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Loader2, CheckCircle, XCircle, Key } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, Key, Shield } from "lucide-react"
+
+const ADMIN_SECRET_CODE = "OSDM_ADMIN_2025_RAZAN" // يمكن تغييره من env variables
 
 export default function SetupPage() {
+  const [secretCode, setSecretCode] = useState("")
+  const [isAuthorized, setIsAuthorized] = useState(false)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
+
+  const verifySecretCode = () => {
+    if (secretCode === ADMIN_SECRET_CODE) {
+      setIsAuthorized(true)
+      setResult({ success: true, message: "تم التحقق بنجاح! يمكنك الآن إنشاء حساب الإدارة" })
+    } else {
+      setResult({ success: false, error: "الكود السري غير صحيح!" })
+    }
+  }
 
   const createAdmin = async () => {
     setLoading(true)
@@ -56,46 +71,79 @@ export default function SetupPage() {
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Key className="h-16 w-16 text-purple-600" />
+            <Shield className="h-16 w-16 text-purple-600" />
           </div>
-          <CardTitle className="text-3xl">OSDM Platform Setup</CardTitle>
+          <CardTitle className="text-3xl">🔒 صفحة سرية - إعداد الإدارة</CardTitle>
           <CardDescription className="text-lg mt-2">
-            Initial Admin Account Creation
+            إنشاء حساب الإدارة (Secret Admin Setup)
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-              📋 Instructions:
-            </h3>
-            <ol className="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-200 text-sm">
-              <li>Click "Check Admin Status" to see if admin exists</li>
-              <li>If no admin exists, click "Create Admin User"</li>
-              <li>Use the credentials below to login</li>
-            </ol>
-          </div>
+          {!isAuthorized ? (
+            <>
+              <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                  🔐 الوصول السري فقط
+                </h3>
+                <p className="text-amber-800 dark:text-amber-200 text-sm">
+                  هذه الصفحة مخصصة للإدارة فقط. يجب إدخال الكود السري للمتابعة.
+                </p>
+              </div>
 
-          <div className="flex gap-3">
-            <Button
-              onClick={checkAdmin}
-              disabled={loading}
-              variant="outline"
-              className="flex-1"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Check Admin Status
-            </Button>
+              <div className="space-y-2">
+                <Label htmlFor="secretCode">الكود السري (Secret Code)</Label>
+                <Input
+                  id="secretCode"
+                  type="password"
+                  value={secretCode}
+                  onChange={(e) => setSecretCode(e.target.value)}
+                  placeholder="أدخل الكود السري..."
+                  className="border-2"
+                />
+              </div>
 
-            <Button
-              onClick={createAdmin}
-              disabled={loading}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Create Admin User
-            </Button>
-          </div>
+              <Button
+                onClick={verifySecretCode}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
+              >
+                <Key className="h-4 w-4 mr-2" />
+                تحقق من الكود
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  ✅ تم التحقق بنجاح
+                </h3>
+                <p className="text-blue-800 dark:text-blue-200 text-sm">
+                  يمكنك الآن إنشاء حساب الإدارة أو التحقق من وجوده
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={checkAdmin}
+                  disabled={loading}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  التحقق من حساب الإدارة
+                </Button>
+
+                <Button
+                  onClick={createAdmin}
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  إنشاء حساب الإدارة
+                </Button>
+              </div>
+            </>
+          )}
 
           {result && (
             <div className={`rounded-lg p-4 ${
