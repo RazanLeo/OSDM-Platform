@@ -1,26 +1,30 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Loader2, CheckCircle, XCircle, Key, Shield } from "lucide-react"
 
-const ADMIN_SECRET_CODE = "OSDM_ADMIN_2025_RAZAN" // يمكن تغييره من env variables
+const ADMIN_SECRET_CODE = "OSDM_ADMIN_2025_RAZAN"
 
 export default function SetupPage() {
+  const router = useRouter()
   const [secretCode, setSecretCode] = useState("")
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
 
-  const verifySecretCode = () => {
-    if (secretCode === ADMIN_SECRET_CODE) {
+  const verifySecretCode = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+
+    if (secretCode.trim() === ADMIN_SECRET_CODE) {
       setIsAuthorized(true)
-      setResult({ success: true, message: "تم التحقق بنجاح! يمكنك الآن إنشاء حساب الإدارة" })
+      setResult({ success: true, message: "✅ تم التحقق بنجاح! يمكنك الآن إنشاء حساب الإدارة" })
     } else {
-      setResult({ success: false, error: "الكود السري غير صحيح!" })
+      setResult({ success: false, error: "❌ الكود السري غير صحيح! تأكد من الكود: OSDM_ADMIN_2025_RAZAN" })
     }
   }
 
@@ -36,10 +40,17 @@ export default function SetupPage() {
 
       const data = await response.json()
       setResult(data)
+
+      // If successful, show login button
+      if (data.success) {
+        setTimeout(() => {
+          router.push('/ar/auth/login')
+        }, 3000)
+      }
     } catch (error: any) {
       setResult({
         success: false,
-        error: 'Failed to create admin',
+        error: 'فشل في إنشاء حساب المدير',
         details: error.message
       })
     } finally {
@@ -104,12 +115,17 @@ export default function SetupPage() {
               </div>
 
               <Button
-                onClick={verifySecretCode}
+                type="button"
+                onClick={(e) => verifySecretCode(e)}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
               >
                 <Key className="h-4 w-4 mr-2" />
                 تحقق من الكود
               </Button>
+
+              <div className="text-xs text-center text-muted-foreground mt-2">
+                الكود: <code className="bg-secondary px-2 py-1 rounded">OSDM_ADMIN_2025_RAZAN</code>
+              </div>
             </>
           ) : (
             <>
