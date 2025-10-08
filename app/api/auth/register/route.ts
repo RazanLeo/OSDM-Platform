@@ -60,16 +60,14 @@ export async function POST(request: NextRequest) {
         username: validatedData.username,
         password: hashedPassword,
         fullName: validatedData.fullName,
-        phoneNumber: validatedData.phoneNumber,
-        role: 'USER', // All registered users are USER role (not BUYER, SELLER, or ADMIN)
-        accountType: validatedData.accountType || 'individual',
+        phone: validatedData.phoneNumber, // phoneNumber → phone
+        role: 'USER', // All registered users are USER role
+        accountType: validatedData.accountType?.toUpperCase() || 'INDIVIDUAL', // individual → INDIVIDUAL
         companyName: validatedData.companyName,
         companyRegistration: validatedData.companyRegistration,
         taxNumber: validatedData.taxNumber,
         country: validatedData.country || "Saudi Arabia",
         city: validatedData.city,
-        isVerified: false,
-        status: 'ACTIVE',
       }
     })
 
