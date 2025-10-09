@@ -1,0 +1,2019 @@
+openapi: 3.0.3
+info:
+  title: OSDM Platform API
+  description: |
+    **OSDM - One Stop Digital Market API**
+
+    السوق الرقمي ذو المحطة الواحدة - عقد API الكامل
+
+    ## الأسواق الثلاثة:
+    1. **Ready-made Products** - منتجات رقمية جاهزة
+    2. **Custom Services** - خدمات مخصصة
+    3. **Freelance Projects** - مشاريع العمل الحر
+
+    ## المصادقة:
+    - JWT Bearer Token
+    - OAuth2 (Google, Apple, GitHub)
+
+    ## العمولات:
+    - عمولة المنصة: 25%
+    - رسوم الدفع: 5%
+  version: 1.0.0
+  contact:
+    name: OSDM Support
+    email: support@osdm.com
+
+servers:
+  - url: https://api.osdm.com/v1
+    description: Production Server
+  - url: https://staging-api.osdm.com/v1
+    description: Staging Server
+  - url: http://localhost:4000/v1
+    description: Local Development
+
+tags:
+  - name: Auth
+    description: المصادقة وإدارة الجلسات
+  - name: Users
+    description: إدارة المستخدمين والملفات الشخصية
+  - name: Products
+    description: السوق الأول - المنتجات الجاهزة
+  - name: Services
+    description: السوق الثاني - الخدمات المخصصة
+  - name: Projects
+    description: السوق الثالث - العمل الحر
+  - name: Orders
+    description: إدارة الطلبات
+  - name: Payments
+    description: الدفع والضمان
+  - name: Disputes
+    description: النزاعات
+  - name: Messages
+    description: المحادثات
+  - name: Notifications
+    description: الإشعارات
+  - name: Admin
+    description: لوحة الإدارة
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ============================================
+  # AUTH ENDPOINTS
+  # ============================================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: تسجيل مستخدم جديد
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password, fullName, country, userType]
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                fullName:
+                  type: string
+                phone:
+                  type: string
+                country:
+                  type: string
+                userType:
+                  type: string
+                  enum: [INDIVIDUAL, COMPANY]
+      responses:
+        '201':
+          description: تم التسجيل بنجاح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: المستخدم موجود بالفعل
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: تسجيل الدخول
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier:
+                  type: string
+                  description: اسم المستخدم أو البريد الإلكتروني
+                password:
+                  type: string
+      responses:
+        '200':
+          description: تم تسجيل الدخول بنجاح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/oauth/{provider}/callback:
+    get:
+      tags: [Auth]
+      summary: OAuth Callback
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, apple, github]
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OAuth Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: تسجيل الخروج
+      responses:
+        '200':
+          description: تم تسجيل الخروج
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: تحديث التوكن
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: تم التحديث
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  # ============================================
+  # USERS ENDPOINTS
+  # ============================================
+  /users/me:
+    get:
+      tags: [Users]
+      summary: الحصول على بيانات المستخدم الحالي
+      responses:
+        '200':
+          description: بيانات المستخدم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    patch:
+      tags: [Users]
+      summary: تحديث بيانات المستخدم
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: تم التحديث
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{userId}:
+    get:
+      tags: [Users]
+      summary: الحصول على بيانات مستخدم
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: بيانات المستخدم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+
+  /users/me/subscription:
+    get:
+      tags: [Users]
+      summary: الحصول على بيانات الاشتراك
+      responses:
+        '200':
+          description: بيانات الاشتراك
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+
+    post:
+      tags: [Users]
+      summary: إنشاء/تحديث اشتراك
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tier]
+              properties:
+                tier:
+                  type: string
+                  enum: [INDIVIDUAL, SME, LARGE]
+      responses:
+        '201':
+          description: تم إنشاء الاشتراك
+
+  /users/me/wallet:
+    get:
+      tags: [Users]
+      summary: الحصول على المحفظة
+      responses:
+        '200':
+          description: بيانات المحفظة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+
+  /users/me/wallet/withdraw:
+    post:
+      tags: [Users]
+      summary: طلب سحب
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, bankDetails]
+              properties:
+                amount:
+                  type: number
+                  minimum: 100
+                bankDetails:
+                  type: object
+      responses:
+        '201':
+          description: تم إنشاء طلب السحب
+
+  # ============================================
+  # PRODUCTS ENDPOINTS (السوق الأول)
+  # ============================================
+  /products:
+    get:
+      tags: [Products]
+      summary: قائمة المنتجات
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [newest, price_asc, price_desc, popular]
+      responses:
+        '200':
+          description: قائمة المنتجات
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Products]
+      summary: إنشاء منتج جديد
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        '201':
+          description: تم إنشاء المنتج
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+  /products/{productId}:
+    get:
+      tags: [Products]
+      summary: الحصول على منتج
+      security: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: بيانات المنتج
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+    patch:
+      tags: [Products]
+      summary: تحديث منتج
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        '200':
+          description: تم التحديث
+
+    delete:
+      tags: [Products]
+      summary: حذف منتج
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: تم الحذف
+
+  /products/categories:
+    get:
+      tags: [Products]
+      summary: قائمة تصنيفات المنتجات
+      security: []
+      responses:
+        '200':
+          description: التصنيفات
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+
+  /products/{productId}/reviews:
+    get:
+      tags: [Products]
+      summary: تقييمات المنتج
+      security: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: التقييمات
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+
+  /products/{productId}/purchase:
+    post:
+      tags: [Products]
+      summary: شراء منتج
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentMethod]
+              properties:
+                paymentMethod:
+                  $ref: '#/components/schemas/PaymentMethodEnum'
+      responses:
+        '201':
+          description: تم إنشاء الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductOrder'
+
+  # ============================================
+  # SERVICES ENDPOINTS (السوق الثاني)
+  # ============================================
+  /services:
+    get:
+      tags: [Services]
+      summary: قائمة الخدمات
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: قائمة الخدمات
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Services]
+      summary: إنشاء خدمة جديدة
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCreate'
+      responses:
+        '201':
+          description: تم إنشاء الخدمة
+
+  /services/{serviceId}:
+    get:
+      tags: [Services]
+      summary: الحصول على خدمة
+      security: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: بيانات الخدمة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+
+  /services/{serviceId}/order:
+    post:
+      tags: [Services]
+      summary: طلب خدمة
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [packageType, requirements, paymentMethod]
+              properties:
+                packageType:
+                  type: string
+                  enum: [BASIC, STANDARD, PREMIUM]
+                requirements:
+                  type: string
+                attachments:
+                  type: array
+                  items:
+                    type: string
+                paymentMethod:
+                  $ref: '#/components/schemas/PaymentMethodEnum'
+      responses:
+        '201':
+          description: تم إنشاء الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceOrder'
+
+  # ============================================
+  # PROJECTS ENDPOINTS (السوق الثالث)
+  # ============================================
+  /projects:
+    get:
+      tags: [Projects]
+      summary: قائمة المشاريع
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+        - name: budgetMin
+          in: query
+          schema:
+            type: number
+        - name: budgetMax
+          in: query
+          schema:
+            type: number
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [OPEN, IN_PROGRESS, COMPLETED]
+      responses:
+        '200':
+          description: قائمة المشاريع
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Projects]
+      summary: إنشاء مشروع جديد
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: تم إنشاء المشروع
+
+  /projects/{projectId}:
+    get:
+      tags: [Projects]
+      summary: الحصول على مشروع
+      security: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: بيانات المشروع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+  /projects/{projectId}/proposals:
+    get:
+      tags: [Projects]
+      summary: العروض على المشروع
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: قائمة العروض
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Proposal'
+
+    post:
+      tags: [Projects]
+      summary: إرسال عرض على المشروع
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalCreate'
+      responses:
+        '201':
+          description: تم إرسال العرض
+
+  /projects/{projectId}/proposals/{proposalId}/accept:
+    post:
+      tags: [Projects]
+      summary: قبول عرض وإنشاء عقد
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: proposalId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentMethod]
+              properties:
+                paymentMethod:
+                  $ref: '#/components/schemas/PaymentMethodEnum'
+      responses:
+        '201':
+          description: تم إنشاء العقد
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+
+  # ============================================
+  # ORDERS ENDPOINTS
+  # ============================================
+  /orders/products:
+    get:
+      tags: [Orders]
+      summary: طلبات المنتجات (كمشتري أو بائع)
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [buyer, seller]
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: قائمة الطلبات
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductOrder'
+
+  /orders/services:
+    get:
+      tags: [Orders]
+      summary: طلبات الخدمات (كمشتري أو بائع)
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [buyer, seller]
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: قائمة الطلبات
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceOrder'
+
+  /orders/contracts:
+    get:
+      tags: [Orders]
+      summary: العقود (كعميل أو مستقل)
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [client, freelancer]
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: قائمة العقود
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contract'
+
+  /orders/products/{orderId}/deliver:
+    post:
+      tags: [Orders]
+      summary: تسليم منتج (للبائع)
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: تم التسليم
+
+  /orders/services/{orderId}/deliver:
+    post:
+      tags: [Orders]
+      summary: تسليم خدمة (للبائع)
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deliveryFiles:
+                  type: array
+                  items:
+                    type: string
+                deliveryNote:
+                  type: string
+      responses:
+        '200':
+          description: تم التسليم
+
+  /orders/products/{orderId}/accept:
+    post:
+      tags: [Orders]
+      summary: قبول التسليم (للمشتري)
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: تم القبول
+
+  /orders/products/{orderId}/review:
+    post:
+      tags: [Orders]
+      summary: تقييم المنتج
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        '201':
+          description: تم التقييم
+
+  # ============================================
+  # PAYMENTS ENDPOINTS
+  # ============================================
+  /payments/{paymentId}:
+    get:
+      tags: [Payments]
+      summary: الحصول على بيانات الدفع
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: بيانات الدفع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /payments/{paymentId}/process:
+    post:
+      tags: [Payments]
+      summary: معالجة الدفع
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cardToken:
+                  type: string
+                saveCard:
+                  type: boolean
+      responses:
+        '200':
+          description: تم الدفع
+
+  # ============================================
+  # DISPUTES ENDPOINTS
+  # ============================================
+  /disputes:
+    get:
+      tags: [Disputes]
+      summary: قائمة النزاعات
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [complainant, respondent]
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: قائمة النزاعات
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dispute'
+
+    post:
+      tags: [Disputes]
+      summary: فتح نزاع
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, marketType, reason, description]
+              properties:
+                orderId:
+                  type: string
+                marketType:
+                  type: string
+                  enum: [PRODUCTS, SERVICES, PROJECTS]
+                reason:
+                  type: string
+                  enum: [NOT_DELIVERED, INCOMPLETE_WORK, POOR_QUALITY, NOT_AS_DESCRIBED, BUYER_UNAVAILABLE, PAYMENT_ISSUE, OTHER]
+                description:
+                  type: string
+                attachments:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: تم فتح النزاع
+
+  /disputes/{disputeId}:
+    get:
+      tags: [Disputes]
+      summary: الحصول على نزاع
+      parameters:
+        - name: disputeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: بيانات النزاع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+
+  # ============================================
+  # MESSAGES ENDPOINTS
+  # ============================================
+  /messages/conversations:
+    get:
+      tags: [Messages]
+      summary: قائمة المحادثات
+      responses:
+        '200':
+          description: المحادثات
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+
+  /messages/conversations/{userId}:
+    get:
+      tags: [Messages]
+      summary: الرسائل مع مستخدم
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: الرسائل
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+
+    post:
+      tags: [Messages]
+      summary: إرسال رسالة
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                attachments:
+                  type: array
+                  items:
+                    type: string
+                orderId:
+                  type: string
+      responses:
+        '201':
+          description: تم الإرسال
+
+  # ============================================
+  # NOTIFICATIONS ENDPOINTS
+  # ============================================
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: قائمة الإشعارات
+      parameters:
+        - name: isRead
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: الإشعارات
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+
+  /notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      summary: تعليم الإشعار كمقروء
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: تم التعليم
+
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: تعليم كل الإشعارات كمقروءة
+      responses:
+        '200':
+          description: تم التعليم
+
+  # ============================================
+  # ADMIN ENDPOINTS
+  # ============================================
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: قائمة المستخدمين (للأدمن)
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: المستخدمين
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /admin/products/{productId}/approve:
+    post:
+      tags: [Admin]
+      summary: الموافقة على منتج
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: تمت الموافقة
+
+  /admin/products/{productId}/reject:
+    post:
+      tags: [Admin]
+      summary: رفض منتج
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: تم الرفض
+
+  /admin/disputes/{disputeId}/resolve:
+    post:
+      tags: [Admin]
+      summary: حل نزاع
+      parameters:
+        - name: disputeId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolution, outcome]
+              properties:
+                resolution:
+                  type: string
+                outcome:
+                  type: string
+                  enum: [RELEASE_TO_SELLER, REFUND_TO_BUYER, PARTIAL_REFUND]
+                refundAmount:
+                  type: number
+      responses:
+        '200':
+          description: تم الحل
+
+  /admin/revenue-settings:
+    get:
+      tags: [Admin]
+      summary: إعدادات العمولات
+      responses:
+        '200':
+          description: الإعدادات
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueSettings'
+
+    patch:
+      tags: [Admin]
+      summary: تحديث إعدادات العمولات
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevenueSettings'
+      responses:
+        '200':
+          description: تم التحديث
+
+  /admin/analytics/overview:
+    get:
+      tags: [Admin]
+      summary: نظرة عامة على التحليلات
+      responses:
+        '200':
+          description: التحليلات
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUsers:
+                    type: integer
+                  totalRevenue:
+                    type: number
+                  totalOrders:
+                    type: integer
+                  activeDisputes:
+                    type: integer
+
+# ============================================
+# COMPONENTS
+# ============================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+
+  responses:
+    BadRequest:
+      description: طلب غير صحيح
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: غير مصرح
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: ممنوع
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: غير موجود
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ============================================
+    # AUTH SCHEMAS
+    # ============================================
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+
+    # ============================================
+    # USER SCHEMAS
+    # ============================================
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        country:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN]
+        userType:
+          type: string
+          enum: [INDIVIDUAL, COMPANY]
+        avatar:
+          type: string
+        bio:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        languages:
+          type: array
+          items:
+            type: string
+        emailVerified:
+          type: boolean
+        phoneVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        fullName:
+          type: string
+        avatar:
+          type: string
+        bio:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+        bio:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        languages:
+          type: array
+          items:
+            type: string
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+        tier:
+          type: string
+          enum: [INDIVIDUAL, SME, LARGE]
+        status:
+          type: string
+          enum: [ACTIVE, EXPIRED, CANCELLED, PENDING_PAYMENT]
+        monthlyPrice:
+          type: number
+        currentPeriodStart:
+          type: string
+          format: date-time
+        currentPeriodEnd:
+          type: string
+          format: date-time
+
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: string
+        balance:
+          type: number
+        pendingBalance:
+          type: number
+        currency:
+          type: string
+
+    # ============================================
+    # PRODUCT SCHEMAS
+    # ============================================
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        seller:
+          $ref: '#/components/schemas/UserPublic'
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        descriptionAr:
+          type: string
+        descriptionEn:
+          type: string
+        slug:
+          type: string
+        category:
+          $ref: '#/components/schemas/Category'
+        price:
+          type: number
+        originalPrice:
+          type: number
+        thumbnail:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        demoUrl:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        downloadCount:
+          type: integer
+        viewCount:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, PENDING, APPROVED, REJECTED, SUSPENDED]
+        averageRating:
+          type: number
+        reviewCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    ProductCreate:
+      type: object
+      required: [titleAr, titleEn, descriptionAr, descriptionEn, categoryId, price, thumbnail]
+      properties:
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        descriptionAr:
+          type: string
+        descriptionEn:
+          type: string
+        categoryId:
+          type: string
+        price:
+          type: number
+        originalPrice:
+          type: number
+        thumbnail:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        demoUrl:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        files:
+          type: array
+          items:
+            type: object
+
+    ProductUpdate:
+      type: object
+      properties:
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        descriptionAr:
+          type: string
+        descriptionEn:
+          type: string
+        price:
+          type: number
+        status:
+          type: string
+
+    ProductOrder:
+      type: object
+      properties:
+        id:
+          type: string
+        orderNumber:
+          type: string
+        buyer:
+          $ref: '#/components/schemas/UserPublic'
+        seller:
+          $ref: '#/components/schemas/UserPublic'
+        product:
+          $ref: '#/components/schemas/Product'
+        productPrice:
+          type: number
+        platformFee:
+          type: number
+        paymentFee:
+          type: number
+        totalAmount:
+          type: number
+        sellerEarning:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, PAID, IN_PROGRESS, DELIVERED, COMPLETED, CANCELLED, REFUNDED]
+        downloadUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    # ============================================
+    # SERVICE SCHEMAS
+    # ============================================
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+        seller:
+          $ref: '#/components/schemas/UserPublic'
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        descriptionAr:
+          type: string
+        descriptionEn:
+          type: string
+        slug:
+          type: string
+        category:
+          $ref: '#/components/schemas/Category'
+        thumbnail:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServicePackage'
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        averageRating:
+          type: number
+        reviewCount:
+          type: integer
+
+    ServicePackage:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [BASIC, STANDARD, PREMIUM]
+        nameAr:
+          type: string
+        nameEn:
+          type: string
+        descriptionAr:
+          type: string
+        descriptionEn:
+          type: string
+        price:
+          type: number
+        deliveryDays:
+          type: integer
+        revisions:
+          type: integer
+        features:
+          type: array
+          items:
+            type: string
+
+    ServiceCreate:
+      type: object
+      required: [titleAr, titleEn, descriptionAr, descriptionEn, categoryId, thumbnail, packages]
+      properties:
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        descriptionAr:
+          type: string
+        descriptionEn:
+          type: string
+        categoryId:
+          type: string
+        thumbnail:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        packages:
+          type: array
+          items:
+            type: object
+
+    ServiceOrder:
+      type: object
+      properties:
+        id:
+          type: string
+        orderNumber:
+          type: string
+        buyer:
+          $ref: '#/components/schemas/UserPublic'
+        seller:
+          $ref: '#/components/schemas/UserPublic'
+        service:
+          $ref: '#/components/schemas/Service'
+        packageType:
+          type: string
+        packagePrice:
+          type: number
+        deliveryDays:
+          type: integer
+        revisions:
+          type: integer
+        requirements:
+          type: string
+        totalAmount:
+          type: number
+        status:
+          type: string
+
+    # ============================================
+    # PROJECT SCHEMAS
+    # ============================================
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        client:
+          $ref: '#/components/schemas/UserPublic'
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        descriptionAr:
+          type: string
+        descriptionEn:
+          type: string
+        slug:
+          type: string
+        category:
+          $ref: '#/components/schemas/Category'
+        budgetMin:
+          type: number
+        budgetMax:
+          type: number
+        budgetType:
+          type: string
+          enum: [FIXED, HOURLY]
+        duration:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+        skills:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        proposalCount:
+          type: integer
+
+    ProjectCreate:
+      type: object
+      required: [titleAr, titleEn, descriptionAr, descriptionEn, categoryId, budgetType]
+      properties:
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        descriptionAr:
+          type: string
+        descriptionEn:
+          type: string
+        categoryId:
+          type: string
+        budgetMin:
+          type: number
+        budgetMax:
+          type: number
+        budgetType:
+          type: string
+        duration:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+        skills:
+          type: array
+          items:
+            type: string
+
+    Proposal:
+      type: object
+      properties:
+        id:
+          type: string
+        project:
+          $ref: '#/components/schemas/Project'
+        freelancer:
+          $ref: '#/components/schemas/UserPublic'
+        coverLetter:
+          type: string
+        proposedAmount:
+          type: number
+        deliveryDays:
+          type: integer
+        status:
+          type: string
+
+    ProposalCreate:
+      type: object
+      required: [coverLetter, proposedAmount, deliveryDays]
+      properties:
+        coverLetter:
+          type: string
+        proposedAmount:
+          type: number
+        deliveryDays:
+          type: integer
+
+    Contract:
+      type: object
+      properties:
+        id:
+          type: string
+        contractNumber:
+          type: string
+        project:
+          $ref: '#/components/schemas/Project'
+        client:
+          $ref: '#/components/schemas/UserPublic'
+        freelancer:
+          $ref: '#/components/schemas/UserPublic'
+        totalAmount:
+          type: number
+        platformFee:
+          type: number
+        paymentFee:
+          type: number
+        freelancerEarning:
+          type: number
+        status:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+
+    # ============================================
+    # PAYMENT SCHEMAS
+    # ============================================
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        paymentNumber:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        method:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED, REFUNDED]
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentMethodEnum:
+      type: string
+      enum: [MADA, VISA, MASTERCARD, APPLE_PAY, STC_PAY, PAYTABS, MOYASAR, PAYPAL, GOOGLE_PAY]
+
+    # ============================================
+    # DISPUTE SCHEMAS
+    # ============================================
+    Dispute:
+      type: object
+      properties:
+        id:
+          type: string
+        disputeNumber:
+          type: string
+        complainant:
+          $ref: '#/components/schemas/UserPublic'
+        respondent:
+          $ref: '#/components/schemas/UserPublic'
+        marketType:
+          type: string
+        orderId:
+          type: string
+        reason:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        resolution:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    # ============================================
+    # MESSAGE SCHEMAS
+    # ============================================
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        sender:
+          $ref: '#/components/schemas/UserPublic'
+        recipient:
+          $ref: '#/components/schemas/UserPublic'
+        content:
+          type: string
+        attachments:
+          type: array
+          items:
+            type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Conversation:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserPublic'
+        lastMessage:
+          $ref: '#/components/schemas/Message'
+        unreadCount:
+          type: integer
+
+    # ============================================
+    # NOTIFICATION SCHEMAS
+    # ============================================
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        messageAr:
+          type: string
+        messageEn:
+          type: string
+        link:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    # ============================================
+    # CATEGORY SCHEMA
+    # ============================================
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        nameAr:
+          type: string
+        nameEn:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+
+    # ============================================
+    # REVIEW SCHEMA
+    # ============================================
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        reviewer:
+          $ref: '#/components/schemas/UserPublic'
+        rating:
+          type: integer
+        comment:
+          type: string
+        sellerResponse:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    # ============================================
+    # REVENUE SETTINGS
+    # ============================================
+    RevenueSettings:
+      type: object
+      properties:
+        platformCommission:
+          type: number
+        paymentGatewayFee:
+          type: number
+        individualPrice:
+          type: number
+        smePrice:
+          type: number
+        largePrice:
+          type: number
+        disputeWindowDays:
+          type: integer
+
+    # ============================================
+    # COMMON SCHEMAS
+    # ============================================
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        statusCode:
+          type: integer
