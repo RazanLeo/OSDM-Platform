@@ -3,93 +3,112 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Decimal } from '@prisma/client/runtime/library'
 
-// Schema للـ validation
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
 const createProjectSchema = z.object({
-  title: z.string().min(5, 'العنوان يجب أن يكون 5 أحرف على الأقل'),
-  description: z.string().min(50, 'الوصف يجب أن يكون 50 حرف على الأقل'),
-  category: z.string().min(1, 'التصنيف مطلوب'),
-  subcategory: z.string().optional(),
-  skills: z.array(z.string()).min(1, 'يجب إضافة مهارة واحدة على الأقل'),
+  // Basic Info (Bilingual)
+  titleAr: z.string().min(5, 'العنوان العربي يجب أن يكون 5 أحرف على الأقل'),
+  titleEn: z.string().min(5, 'English title must be at least 5 characters'),
+  descriptionAr: z.string().min(50, 'الوصف العربي يجب أن يكون 50 حرف على الأقل'),
+  descriptionEn: z.string().min(50, 'English description must be at least 50 characters'),
+
+  // Category
+  categoryId: z.string().cuid('معرف التصنيف غير صحيح'),
+
+  // Budget
   budgetType: z.enum(['FIXED', 'HOURLY']),
-  fixedBudget: z.number().min(0).optional(),
-  hourlyRateMin: z.number().min(0).optional(),
-  hourlyRateMax: z.number().min(0).optional(),
-  estimatedHours: z.number().min(0).optional(),
-  duration: z.string().min(1, 'المدة مطلوبة'),
-  experienceLevel: z.enum(['BEGINNER', 'INTERMEDIATE', 'EXPERT']),
-  projectSize: z.enum(['SMALL', 'MEDIUM', 'LARGE']),
-  attachments: z.array(z.string().url()).optional(),
-  milestones: z.array(
-    z.object({
-      title: z.string(),
-      description: z.string(),
-      amount: z.number().min(0),
-      dueDate: z.string(),
-    })
-  ).optional(),
+  budgetMin: z.number().min(0).optional(),
+  budgetMax: z.number().min(0).optional(),
+
+  // Timeline
+  duration: z.number().int().min(1, 'المدة يجب أن تكون يوم واحد على الأقل'), // عدد الأيام
+  deadline: z.string().optional(), // ISO date string
+
+  // Requirements
+  skills: z.array(z.string()).min(1, 'يجب إضافة مهارة واحدة على الأقل'),
+  attachments: z.array(z.string().url()).optional().default([]),
 })
 
-// GET - جلب جميع المشاريع
+// ============================================
+// GET - List all projects with filtering & search
+// ============================================
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
 
+    // Pagination
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '12')
+
+    // Search & Filter
     const search = searchParams.get('search') || ''
-    const category = searchParams.get('category') || ''
-    const subcategory = searchParams.get('subcategory') || ''
+    const lang = searchParams.get('lang') || 'ar' // ar or en
+    const categoryId = searchParams.get('categoryId') || ''
     const budgetType = searchParams.get('budgetType') as 'FIXED' | 'HOURLY' | ''
     const minBudget = parseFloat(searchParams.get('minBudget') || '0')
     const maxBudget = parseFloat(searchParams.get('maxBudget') || '999999')
-    const experienceLevel = searchParams.get('experienceLevel') as 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT' | ''
-    const projectSize = searchParams.get('projectSize') as 'SMALL' | 'MEDIUM' | 'LARGE' | ''
     const skills = searchParams.get('skills')?.split(',').filter(Boolean) || []
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const order = searchParams.get('order') || 'desc'
+    const order = (searchParams.get('order') || 'desc') as 'asc' | 'desc'
+    const status = searchParams.get('status') as 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED' | undefined
     const clientId = searchParams.get('clientId') || undefined
-    const status = searchParams.get('status') as 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | undefined
 
-    // بناء شروط البحث
+    // Build WHERE clause
     const where: any = {
       AND: [
+        // Search in titles and descriptions (bilingual)
         search
           ? {
               OR: [
-                { title: { contains: search, mode: 'insensitive' } },
-                { description: { contains: search, mode: 'insensitive' } },
+                { titleAr: { contains: search, mode: 'insensitive' } },
+                { titleEn: { contains: search, mode: 'insensitive' } },
+                { descriptionAr: { contains: search, mode: 'insensitive' } },
+                { descriptionEn: { contains: search, mode: 'insensitive' } },
                 { skills: { hasSome: [search] } },
               ],
             }
           : {},
-        category ? { category } : {},
-        subcategory ? { subcategory } : {},
+        // Category filter
+        categoryId ? { categoryId } : {},
+        // Budget type filter
         budgetType ? { budgetType } : {},
-        experienceLevel ? { experienceLevel } : {},
-        projectSize ? { projectSize } : {},
+        // Status filter (default: show only OPEN for public)
+        status ? { status } : { status: 'OPEN' },
+        // Client filter
         clientId ? { clientId } : {},
-        status ? { status } : { status: 'OPEN' }, // فقط المشاريع المفتوحة افتراضياً
+        // Skills filter
         skills.length > 0 ? { skills: { hasSome: skills } } : {},
       ],
     }
 
-    // فلترة الميزانية
-    if (budgetType === 'FIXED') {
-      where.AND.push({
-        fixedBudget: { gte: minBudget, lte: maxBudget },
-      })
-    } else if (budgetType === 'HOURLY') {
+    // Budget range filter
+    if (budgetType === 'FIXED' || !budgetType) {
       where.AND.push({
         OR: [
-          { hourlyRateMin: { gte: minBudget } },
-          { hourlyRateMax: { lte: maxBudget } },
+          {
+            AND: [
+              { budgetMin: { gte: new Decimal(minBudget) } },
+              { budgetMin: { lte: new Decimal(maxBudget) } },
+            ],
+          },
+          {
+            AND: [
+              { budgetMax: { gte: new Decimal(minBudget) } },
+              { budgetMax: { lte: new Decimal(maxBudget) } },
+            ],
+          },
         ],
       })
     }
 
+    // Count total
     const total = await prisma.project.count({ where })
 
+    // Fetch projects
     const projects = await prisma.project.findMany({
       where,
       skip: (page - 1) * limit,
@@ -101,12 +120,17 @@ export async function GET(request: NextRequest) {
             id: true,
             username: true,
             fullName: true,
-            profileImage: true,
+            profilePicture: true,
             country: true,
-            city: true,
-            memberSince: true,
-            totalSpent: true,
-            verificationStatus: true,
+            isVerified: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            nameAr: true,
+            nameEn: true,
+            slug: true,
           },
         },
         _count: {
@@ -117,20 +141,33 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Format response based on language
+    const formattedProjects = projects.map((project) => ({
+      ...project,
+      title: lang === 'ar' ? project.titleAr : project.titleEn,
+      description: lang === 'ar' ? project.descriptionAr : project.descriptionEn,
+      category: {
+        ...project.category,
+        name: lang === 'ar' ? project.category.nameAr : project.category.nameEn,
+      },
+    }))
+
+    // Pagination stats
     const stats = {
       total,
       pages: Math.ceil(total / limit),
       currentPage: page,
       limit,
+      hasMore: page < Math.ceil(total / limit),
     }
 
     return NextResponse.json({
       success: true,
-      data: projects,
-      stats,
+      data: formattedProjects,
+      pagination: stats,
     })
   } catch (error: any) {
-    console.error('Error fetching projects:', error)
+    console.error('❌ Error fetching projects:', error)
     return NextResponse.json(
       { success: false, error: 'فشل في جلب المشاريع' },
       { status: 500 }
@@ -138,11 +175,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - إنشاء مشروع جديد
+// ============================================
+// POST - Create new project
+// ============================================
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
+    // Check authentication
     if (!session || !session.user) {
       return NextResponse.json(
         { success: false, error: 'يجب تسجيل الدخول أولاً' },
@@ -150,6 +190,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Anyone can post projects (unified account system)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
     })
@@ -161,47 +202,63 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // يمكن للجميع نشر مشاريع (BUYER, SELLER, ADMIN)
     const body = await request.json()
+
+    // Validation
     const validatedData = createProjectSchema.parse(body)
 
-    // فصل المعالم عن بقية البيانات
-    const { milestones, ...projectData } = validatedData
+    // Verify category exists
+    const category = await prisma.projectCategory.findUnique({
+      where: { id: validatedData.categoryId },
+    })
 
-    // التحقق من صحة الميزانية
-    if (projectData.budgetType === 'FIXED' && !projectData.fixedBudget) {
+    if (!category) {
       return NextResponse.json(
-        { success: false, error: 'يجب تحديد الميزانية الثابتة' },
+        { success: false, error: 'التصنيف المحدد غير موجود' },
         { status: 400 }
       )
     }
 
-    if (
-      projectData.budgetType === 'HOURLY' &&
-      (!projectData.hourlyRateMin || !projectData.hourlyRateMax)
-    ) {
+    // Validate budget based on type
+    if (!validatedData.budgetMin || !validatedData.budgetMax) {
       return NextResponse.json(
-        { success: false, error: 'يجب تحديد المعدل بالساعة' },
+        { success: false, error: 'يجب تحديد نطاق الميزانية (الحد الأدنى والأقصى)' },
         { status: 400 }
       )
     }
 
-    // إنشاء المشروع
+    if (validatedData.budgetMin > validatedData.budgetMax) {
+      return NextResponse.json(
+        { success: false, error: 'الحد الأدنى للميزانية يجب أن يكون أقل من الحد الأقصى' },
+        { status: 400 }
+      )
+    }
+
+    // Generate unique slug from titleEn
+    const slug = await generateUniqueSlug(validatedData.titleEn)
+
+    // Parse deadline if provided
+    const deadline = validatedData.deadline ? new Date(validatedData.deadline) : null
+
+    // Create project
     const project = await prisma.project.create({
       data: {
-        ...projectData,
         clientId: session.user.id,
-        slug: generateSlug(validatedData.title),
+        titleAr: validatedData.titleAr,
+        titleEn: validatedData.titleEn,
+        descriptionAr: validatedData.descriptionAr,
+        descriptionEn: validatedData.descriptionEn,
+        slug,
+        categoryId: validatedData.categoryId,
+        budgetMin: new Decimal(validatedData.budgetMin),
+        budgetMax: new Decimal(validatedData.budgetMax),
+        budgetType: validatedData.budgetType,
+        duration: validatedData.duration,
+        deadline,
+        skills: validatedData.skills,
+        attachments: validatedData.attachments,
         status: 'OPEN',
-        milestones: milestones
-          ? {
-              create: milestones.map((m) => ({
-                ...m,
-                dueDate: new Date(m.dueDate),
-                status: 'PENDING',
-              })),
-            }
-          : undefined,
+        publishedAt: new Date(),
       },
       include: {
         client: {
@@ -209,37 +266,61 @@ export async function POST(request: NextRequest) {
             id: true,
             username: true,
             fullName: true,
-            profileImage: true,
+            profilePicture: true,
+            isVerified: true,
           },
         },
-        milestones: true,
+        category: {
+          select: {
+            id: true,
+            nameAr: true,
+            nameEn: true,
+            slug: true,
+          },
+        },
       },
     })
 
-    // إنشاء إشعار للعميل
+    // Create notification
     await prisma.notification.create({
       data: {
         userId: session.user.id,
-        type: 'PROJECT_CREATED',
-        title: 'تم إنشاء المشروع',
-        message: `تم إنشاء المشروع "${project.title}" بنجاح`,
-        relatedId: project.id,
+        type: 'SYSTEM',
+        title: 'تم نشر المشروع بنجاح',
+        message: `تم نشر مشروعك "${project.titleAr}" بنجاح. سيتمكن المستقلون الآن من تقديم عروضهم.`,
+        link: `/projects/${project.id}`,
+        isRead: false,
       },
     })
 
-    // إشعار للمستقلين المناسبين (اختياري - يمكن تطويره لاحقاً)
-    // يمكن إرسال إشعارات للمستقلين الذين لديهم المهارات المطلوبة
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: 'CREATE_PROJECT',
+        entityType: 'Project',
+        entityId: project.id,
+        details: {
+          title: project.titleEn,
+          category: category.nameEn,
+          budgetType: project.budgetType,
+          budgetRange: `${project.budgetMin}-${project.budgetMax} SAR`,
+        },
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+      },
+    })
 
     return NextResponse.json(
       {
         success: true,
-        message: 'تم إنشاء المشروع بنجاح',
+        message: 'تم نشر المشروع بنجاح',
         data: project,
       },
       { status: 201 }
     )
   } catch (error: any) {
-    console.error('Error creating project:', error)
+    console.error('❌ Error creating project:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -253,31 +334,45 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: false, error: 'فشل في إنشاء المشروع' },
+      { success: false, error: 'فشل في نشر المشروع' },
       { status: 500 }
     )
   }
 }
 
-// دالة مساعدة لإنشاء slug
-function generateSlug(title: string): string {
-  const arabicToEnglish: { [key: string]: string } = {
-    ا: 'a', ب: 'b', ت: 't', ث: 'th', ج: 'j', ح: 'h', خ: 'kh', د: 'd',
-    ذ: 'dh', ر: 'r', ز: 'z', س: 's', ش: 'sh', ص: 's', ض: 'd', ط: 't',
-    ظ: 'dh', ع: 'a', غ: 'gh', ف: 'f', ق: 'q', ك: 'k', ل: 'l', م: 'm',
-    ن: 'n', ه: 'h', و: 'w', ي: 'y', ة: 'h', ى: 'a', ئ: 'e', ء: 'a',
-  }
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 
-  let slug = title
+/**
+ * Generate unique slug from title
+ * Ensures uniqueness by checking database
+ */
+async function generateUniqueSlug(title: string): Promise<string> {
+  let baseSlug = title
     .toLowerCase()
-    .split('')
-    .map((char) => arabicToEnglish[char] || char)
-    .join('')
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+    .substring(0, 50)
     .trim()
 
-  slug += '-' + Math.random().toString(36).substring(2, 8)
+  let slug = baseSlug
+  let counter = 1
+
+  // Check if slug exists, if yes, append counter
+  while (true) {
+    const existing = await prisma.project.findUnique({
+      where: { slug },
+    })
+
+    if (!existing) {
+      break
+    }
+
+    slug = `${baseSlug}-${counter}`
+    counter++
+  }
+
   return slug
 }

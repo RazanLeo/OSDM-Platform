@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { prisma } from '@/lib/prisma'
+import { Decimal } from '@prisma/client/runtime/library'
 import { z } from 'zod'
 
-// Schema لطلب خدمة
+// ============================================
+// VALIDATION SCHEMA
+// ============================================
+
 const orderServiceSchema = z.object({
   packageType: z.enum(['BASIC', 'STANDARD', 'PREMIUM']),
-  requirements: z.string().min(10, 'يجب كتابة متطلبات الخدمة (10 أحرف على الأقل)'),
-  attachments: z.array(z.string().url()).optional(),
-  notes: z.string().optional(),
+  requirements: z.string().min(10, 'الرجاء كتابة متطلبات الخدمة (10 أحرف على الأقل)'),
+  attachments: z.array(z.string().url()).optional().default([]),
 })
 
-// POST - طلب خدمة
+// ============================================
+// POST - Order a service (create ServiceOrder)
+// ============================================
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -20,6 +25,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
 
+    // Check authentication
     if (!session || !session.user) {
       return NextResponse.json(
         { success: false, error: 'يجب تسجيل الدخول أولاً' },
@@ -27,11 +33,28 @@ export async function POST(
       )
     }
 
-    const service = await prisma.customService.findUnique({
-      where: { id: params.id },
+    const serviceId = params.id
+    const body = await request.json()
+
+    // Validation
+    const validatedData = orderServiceSchema.parse(body)
+
+    // Fetch service with seller and packages
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
       include: {
-        packages: true,
-        seller: true,
+        seller: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+          },
+        },
+        packages: {
+          where: {
+            type: validatedData.packageType,
+          },
+        },
       },
     })
 
@@ -42,14 +65,15 @@ export async function POST(
       )
     }
 
-    if (service.status !== 'PUBLISHED') {
+    // Check service status
+    if (service.status !== 'APPROVED') {
       return NextResponse.json(
-        { success: false, error: 'هذه الخدمة غير متاحة حالياً' },
+        { success: false, error: 'هذه الخدمة غير متاحة للطلب حالياً' },
         { status: 400 }
       )
     }
 
-    // لا يمكن للبائع طلب خدمته الخاصة
+    // Check if user is trying to order their own service
     if (service.sellerId === session.user.id) {
       return NextResponse.json(
         { success: false, error: 'لا يمكنك طلب خدمتك الخاصة' },
@@ -57,151 +81,199 @@ export async function POST(
       )
     }
 
-    const body = await request.json()
-    const validatedData = orderServiceSchema.parse(body)
-
-    // البحث عن الباقة المطلوبة
-    const selectedPackage = service.packages.find(
-      (pkg) => pkg.name === validatedData.packageType
-    )
-
-    if (!selectedPackage) {
+    // Check if package exists
+    if (service.packages.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'الباقة المطلوبة غير موجودة' },
+        { success: false, error: 'الباقة المحددة غير موجودة' },
         { status: 404 }
       )
     }
 
-    // التحقق من رصيد المشتري
-    const buyer = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const selectedPackage = service.packages[0]
+
+    // Check if user already has an active order for this service
+    const existingOrder = await prisma.serviceOrder.findFirst({
+      where: {
+        serviceId,
+        buyerId: session.user.id,
+        status: {
+          in: ['PENDING', 'PAID', 'IN_PROGRESS'],
+        },
+      },
     })
 
-    if (!buyer) {
+    if (existingOrder) {
       return NextResponse.json(
-        { success: false, error: 'المستخدم غير موجود' },
-        { status: 404 }
+        {
+          success: false,
+          error: 'لديك طلب نشط لهذه الخدمة بالفعل',
+          orderId: existingOrder.id,
+        },
+        { status: 400 }
       )
     }
 
-    // حساب العمولة
-    const platformFeeSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'PLATFORM_FEE' },
-    })
+    // Get revenue settings for commission calculation
+    const revenueSettings = await prisma.revenueSettings.findFirst()
 
-    const platformFeePercentage = platformFeeSetting?.value
-      ? (platformFeeSetting.value as any).percentage || 25
-      : 25
+    const platformCommission = revenueSettings?.platformCommission || new Decimal(25)
+    const paymentGatewayFee = revenueSettings?.paymentGatewayFee || new Decimal(5)
 
-    const platformFee = (selectedPackage.price * platformFeePercentage) / 100
-    const sellerAmount = selectedPackage.price - platformFee
+    // Calculate amounts
+    const packagePrice = selectedPackage.price
+    const platformFeeAmount = packagePrice.mul(platformCommission).div(100)
+    const paymentFeeAmount = packagePrice.mul(paymentGatewayFee).div(100)
+    const sellerEarning = packagePrice.sub(platformFeeAmount).sub(paymentFeeAmount)
 
-    // إنشاء الطلب
-    const order = await prisma.order.create({
+    // Generate unique order number
+    const orderNumber = await generateOrderNumber()
+
+    // Calculate deadline
+    const deadline = new Date()
+    deadline.setDate(deadline.getDate() + selectedPackage.deliveryDays)
+
+    // Create order
+    const order = await prisma.serviceOrder.create({
       data: {
+        orderNumber,
         buyerId: session.user.id,
         sellerId: service.sellerId,
         serviceId: service.id,
-        orderType: 'SERVICE',
         packageType: validatedData.packageType,
-        amount: selectedPackage.price,
-        platformFee,
-        sellerAmount,
-        status: 'PENDING',
+        packagePrice,
+        deliveryDays: selectedPackage.deliveryDays,
+        revisions: selectedPackage.revisions,
         requirements: validatedData.requirements,
-        attachments: validatedData.attachments || [],
-        notes: validatedData.notes,
-        deliveryDate: new Date(
-          Date.now() + selectedPackage.deliveryDays * 24 * 60 * 60 * 1000
-        ),
+        attachments: validatedData.attachments,
+        platformFee: platformFeeAmount,
+        paymentFee: paymentFeeAmount,
+        totalAmount: packagePrice,
+        sellerEarning,
+        status: 'PENDING', // سيتحول إلى PAID بعد الدفع
+        deadline,
       },
       include: {
-        buyer: {
-          select: {
-            id: true,
-            username: true,
-            fullName: true,
-            profileImage: true,
-          },
-        },
-        seller: {
-          select: {
-            id: true,
-            username: true,
-            fullName: true,
-            profileImage: true,
-          },
-        },
         service: {
           select: {
-            id: true,
-            title: true,
+            titleAr: true,
+            titleEn: true,
             thumbnail: true,
           },
         },
+        buyer: {
+          select: {
+            username: true,
+            fullName: true,
+          },
+        },
       },
     })
 
-    // إنشاء إشعار للبائع
-    await prisma.notification.create({
+    // Create payment record
+    const payment = await prisma.payment.create({
       data: {
-        userId: service.sellerId,
-        type: 'NEW_ORDER',
-        title: 'طلب جديد',
-        message: `لديك طلب جديد على الخدمة "${service.title}"`,
-        relatedId: order.id,
+        amount: packagePrice,
+        currency: 'SAR',
+        paymentMethod: 'MADA', // سيتم تحديثه بعد اختيار البوابة
+        status: 'PENDING',
+        marketType: 'SERVICES',
+        serviceOrderId: order.id,
       },
     })
 
-    // إنشاء إشعار للمشتري
-    await prisma.notification.create({
+    // Create escrow to hold funds
+    const escrow = await prisma.escrow.create({
+      data: {
+        amount: sellerEarning,
+        buyerId: session.user.id,
+        sellerId: service.sellerId,
+        status: 'PENDING',
+        marketType: 'SERVICES',
+        serviceOrderId: order.id,
+      },
+    })
+
+    // Create notifications
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: session.user.id,
+          type: 'ORDER',
+          title: 'طلب خدمة جديد',
+          message: `تم إنشاء طلب للخدمة "${service.titleAr}". الرجاء إتمام عملية الدفع.`,
+          link: `/buyer/orders/${order.id}`,
+          isRead: false,
+        },
+        {
+          userId: service.sellerId,
+          type: 'ORDER',
+          title: 'طلب خدمة جديد',
+          message: `لديك طلب جديد للخدمة "${service.titleAr}" من ${order.buyer.fullName}`,
+          link: `/seller/orders/${order.id}`,
+          isRead: false,
+        },
+      ],
+    })
+
+    // Create audit log
+    await prisma.auditLog.create({
       data: {
         userId: session.user.id,
-        type: 'ORDER_CREATED',
-        title: 'تم إنشاء الطلب',
-        message: `تم إنشاء طلبك على الخدمة "${service.title}" بنجاح. في انتظار موافقة البائع`,
-        relatedId: order.id,
-      },
-    })
-
-    // إنشاء محادثة بين البائع والمشتري
-    const conversation = await prisma.conversation.create({
-      data: {
-        participant1Id: session.user.id,
-        participant2Id: service.sellerId,
-        orderId: order.id,
-        lastMessageAt: new Date(),
-      },
-    })
-
-    // رسالة ترحيبية تلقائية
-    await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
-        senderId: service.sellerId,
-        receiverId: session.user.id,
-        content: `مرحباً! شكراً لطلبك الخدمة "${service.title}". سأبدأ العمل عليها فوراً وسأتواصل معك في حال احتجت أي توضيحات.`,
-        type: 'TEXT',
+        action: 'CREATE_SERVICE_ORDER',
+        entityType: 'ServiceOrder',
+        entityId: order.id,
+        details: {
+          service: service.titleEn,
+          package: validatedData.packageType,
+          amount: packagePrice.toString(),
+          seller: service.seller.username,
+        },
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
       },
     })
 
     return NextResponse.json(
       {
         success: true,
-        message: 'تم إنشاء الطلب بنجاح',
+        message: 'تم إنشاء الطلب بنجاح. الرجاء إتمام عملية الدفع.',
         data: {
-          order,
-          conversationId: conversation.id,
+          order: {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            amount: order.totalAmount,
+            status: order.status,
+            packageType: order.packageType,
+            deliveryDays: order.deliveryDays,
+            revisions: order.revisions,
+            deadline: order.deadline,
+            createdAt: order.createdAt,
+          },
+          payment: {
+            id: payment.id,
+            amount: payment.amount,
+            status: payment.status,
+          },
+          escrow: {
+            id: escrow.id,
+            status: escrow.status,
+          },
+          // Payment URL will be added here after payment gateway integration
+          paymentUrl: `/checkout/${payment.id}`,
         },
       },
       { status: 201 }
     )
   } catch (error: any) {
-    console.error('Error creating service order:', error)
+    console.error('❌ Error creating service order:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'بيانات غير صحيحة', details: error.errors },
+        {
+          success: false,
+          error: 'بيانات غير صحيحة',
+          details: error.errors,
+        },
         { status: 400 }
       )
     }
@@ -211,4 +283,39 @@ export async function POST(
       { status: 500 }
     )
   }
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Generate unique order number
+ * Format: SERV-YYYY-XXXXXX (e.g., SERV-2025-000123)
+ */
+async function generateOrderNumber(): Promise<string> {
+  const year = new Date().getFullYear()
+  const prefix = `SERV-${year}-`
+
+  // Get last order number for this year
+  const lastOrder = await prisma.serviceOrder.findFirst({
+    where: {
+      orderNumber: {
+        startsWith: prefix,
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  })
+
+  let nextNumber = 1
+  if (lastOrder) {
+    const lastNumber = parseInt(lastOrder.orderNumber.split('-')[2])
+    nextNumber = lastNumber + 1
+  }
+
+  // Pad with zeros (6 digits)
+  const paddedNumber = nextNumber.toString().padStart(6, '0')
+  return `${prefix}${paddedNumber}`
 }
