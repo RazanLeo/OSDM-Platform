@@ -3,78 +3,94 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Decimal } from '@prisma/client/runtime/library'
 
-// Schema للـ validation
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
 const createProductSchema = z.object({
-  title: z.string().min(3, 'العنوان يجب أن يكون 3 أحرف على الأقل'),
-  description: z.string().min(10, 'الوصف يجب أن يكون 10 أحرف على الأقل'),
+  // Basic Info (Bilingual)
+  titleAr: z.string().min(3, 'العنوان العربي يجب أن يكون 3 أحرف على الأقل'),
+  titleEn: z.string().min(3, 'English title must be at least 3 characters'),
+  descriptionAr: z.string().min(10, 'الوصف العربي يجب أن يكون 10 أحرف على الأقل'),
+  descriptionEn: z.string().min(10, 'English description must be at least 10 characters'),
+
+  // Category
+  categoryId: z.string().cuid('معرف التصنيف غير صحيح'),
+
+  // Pricing
   price: z.number().min(0, 'السعر يجب أن يكون صفر أو أكثر'),
-  category: z.string().min(1, 'التصنيف مطلوب'),
-  subcategory: z.string().optional(),
-  productType: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  thumbnail: z.string().url('رابط الصورة غير صحيح').optional(),
-  images: z.array(z.string().url()).optional(),
+  originalPrice: z.number().optional(),
+
+  // Media
+  thumbnail: z.string().url('رابط الصورة المصغرة غير صحيح'),
+  images: z.array(z.string().url()).optional().default([]),
   demoUrl: z.string().url().optional(),
-  licenseType: z.enum(['PERSONAL', 'COMMERCIAL', 'EXTENDED']).optional(),
-  compatibility: z.array(z.string()).optional(),
-  requirements: z.array(z.string()).optional(),
-  features: z.array(z.string()).optional(),
+
+  // Metadata
+  tags: z.array(z.string()).optional().default([]),
+
+  // SEO (optional)
+  metaTitleAr: z.string().optional(),
+  metaTitleEn: z.string().optional(),
+  metaDescAr: z.string().optional(),
+  metaDescEn: z.string().optional(),
 })
 
-// GET - جلب جميع المنتجات مع الفلترة والبحث
+// ============================================
+// GET - List all products with filtering & search
+// ============================================
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
 
-    // معاملات البحث والفلترة
+    // Pagination
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '12')
+
+    // Search & Filter
     const search = searchParams.get('search') || ''
-    const category = searchParams.get('category') || ''
-    const subcategory = searchParams.get('subcategory') || ''
+    const lang = searchParams.get('lang') || 'ar' // ar or en
+    const categoryId = searchParams.get('categoryId') || ''
     const minPrice = parseFloat(searchParams.get('minPrice') || '0')
     const maxPrice = parseFloat(searchParams.get('maxPrice') || '999999')
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const order = searchParams.get('order') || 'desc'
-    const status = searchParams.get('status') as 'DRAFT' | 'PUBLISHED' | 'SUSPENDED' | undefined
+    const order = (searchParams.get('order') || 'desc') as 'asc' | 'desc'
+    const status = searchParams.get('status') as 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | undefined
     const sellerId = searchParams.get('sellerId') || undefined
-    const featured = searchParams.get('featured') === 'true' ? true : undefined
-    const bestseller = searchParams.get('bestseller') === 'true' ? true : undefined
 
-    // بناء شروط البحث
+    // Build WHERE clause
     const where: any = {
       AND: [
-        // البحث في العنوان والوصف
+        // Search in titles and descriptions (bilingual)
         search
           ? {
               OR: [
-                { title: { contains: search, mode: 'insensitive' } },
-                { description: { contains: search, mode: 'insensitive' } },
+                { titleAr: { contains: search, mode: 'insensitive' } },
+                { titleEn: { contains: search, mode: 'insensitive' } },
+                { descriptionAr: { contains: search, mode: 'insensitive' } },
+                { descriptionEn: { contains: search, mode: 'insensitive' } },
                 { tags: { hasSome: [search] } },
               ],
             }
           : {},
-        // التصنيف
-        category ? { category: { equals: category } } : {},
-        subcategory ? { subcategory: { equals: subcategory } } : {},
-        // السعر
-        { price: { gte: minPrice, lte: maxPrice } },
-        // الحالة
-        status ? { status } : {},
-        // البائع
+        // Category filter
+        categoryId ? { categoryId } : {},
+        // Price range
+        { price: { gte: new Decimal(minPrice), lte: new Decimal(maxPrice) } },
+        // Status filter (default: show only APPROVED for public)
+        status ? { status } : { status: 'APPROVED' },
+        // Seller filter
         sellerId ? { sellerId } : {},
-        // مميز
-        featured !== undefined ? { featured } : {},
-        bestseller !== undefined ? { bestseller } : {},
       ],
     }
 
-    // العد الإجمالي
-    const total = await prisma.readyProduct.count({ where })
+    // Count total
+    const total = await prisma.product.count({ where })
 
-    // جلب المنتجات
-    const products = await prisma.readyProduct.findMany({
+    // Fetch products
+    const products = await prisma.product.findMany({
       where,
       skip: (page - 1) * limit,
       take: limit,
@@ -85,15 +101,16 @@ export async function GET(request: NextRequest) {
             id: true,
             username: true,
             fullName: true,
-            profileImage: true,
-            sellerProfile: {
-              select: {
-                verifiedBadge: true,
-                rating: true,
-                totalSales: true,
-                level: true,
-              },
-            },
+            profilePicture: true,
+            isVerified: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            nameAr: true,
+            nameEn: true,
+            slug: true,
           },
         },
         files: {
@@ -102,32 +119,45 @@ export async function GET(request: NextRequest) {
             fileName: true,
             fileSize: true,
             fileType: true,
+            downloadUrl: true,
           },
         },
         _count: {
           select: {
             reviews: true,
-            favorites: true,
+            orders: true,
           },
         },
       },
     })
 
-    // حساب الإحصائيات
+    // Format response based on language
+    const formattedProducts = products.map((product) => ({
+      ...product,
+      title: lang === 'ar' ? product.titleAr : product.titleEn,
+      description: lang === 'ar' ? product.descriptionAr : product.descriptionEn,
+      category: {
+        ...product.category,
+        name: lang === 'ar' ? product.category.nameAr : product.category.nameEn,
+      },
+    }))
+
+    // Pagination stats
     const stats = {
       total,
       pages: Math.ceil(total / limit),
       currentPage: page,
       limit,
+      hasMore: page < Math.ceil(total / limit),
     }
 
     return NextResponse.json({
       success: true,
-      data: products,
-      stats,
+      data: formattedProducts,
+      pagination: stats,
     })
   } catch (error: any) {
-    console.error('Error fetching products:', error)
+    console.error('❌ Error fetching products:', error)
     return NextResponse.json(
       { success: false, error: 'فشل في جلب المنتجات' },
       { status: 500 }
@@ -135,12 +165,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - إنشاء منتج جديد
+// ============================================
+// POST - Create new product
+// ============================================
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    // التحقق من تسجيل الدخول
+    // Check authentication
     if (!session || !session.user) {
       return NextResponse.json(
         { success: false, error: 'يجب تسجيل الدخول أولاً' },
@@ -148,35 +180,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // التحقق من أن المستخدم بائع
+    // Check if user can sell (USER role can be both buyer AND seller in unified account)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { sellerProfile: true },
+      include: {
+        subscription: {
+          where: {
+            status: 'ACTIVE',
+            expiresAt: { gte: new Date() },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
     })
 
-    if (!user || (user.role !== 'SELLER' && user.role !== 'ADMIN')) {
+    if (!user) {
       return NextResponse.json(
-        { success: false, error: 'يجب أن تكون بائعاً لإنشاء منتج' },
-        { status: 403 }
+        { success: false, error: 'المستخدم غير موجود' },
+        { status: 404 }
       )
     }
 
-    // التحقق من رسوم نشر المنتج
-    const listingFeeSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'PRODUCT_LISTING_FEE' },
-    })
-
-    const listingFee = listingFeeSetting?.value
-      ? (listingFeeSetting.value as any).amount || 0
-      : 0
-
-    if (user.balance < listingFee) {
+    // Check if user has active subscription
+    if (user.subscription.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: `رصيدك غير كافٍ. يجب أن يكون لديك ${listingFee} ريال على الأقل لنشر منتج`,
+          error: 'يجب أن يكون لديك اشتراك نشط لإنشاء منتج',
+          hint: 'اختر باقة الاشتراك المناسبة: 100/250/500 ريال شهرياً',
         },
-        { status: 400 }
+        { status: 403 }
       )
     }
 
@@ -185,12 +219,43 @@ export async function POST(request: NextRequest) {
     // Validation
     const validatedData = createProductSchema.parse(body)
 
-    // إنشاء المنتج
-    const product = await prisma.readyProduct.create({
+    // Verify category exists
+    const category = await prisma.productCategory.findUnique({
+      where: { id: validatedData.categoryId },
+    })
+
+    if (!category) {
+      return NextResponse.json(
+        { success: false, error: 'التصنيف المحدد غير موجود' },
+        { status: 400 }
+      )
+    }
+
+    // Generate unique slug from titleEn
+    const slug = await generateUniqueSlug(validatedData.titleEn)
+
+    // Create product
+    const product = await prisma.product.create({
       data: {
-        ...validatedData,
         sellerId: session.user.id,
-        slug: generateSlug(validatedData.title),
+        titleAr: validatedData.titleAr,
+        titleEn: validatedData.titleEn,
+        descriptionAr: validatedData.descriptionAr,
+        descriptionEn: validatedData.descriptionEn,
+        slug,
+        categoryId: validatedData.categoryId,
+        price: new Decimal(validatedData.price),
+        originalPrice: validatedData.originalPrice
+          ? new Decimal(validatedData.originalPrice)
+          : null,
+        thumbnail: validatedData.thumbnail,
+        images: validatedData.images || [],
+        demoUrl: validatedData.demoUrl,
+        tags: validatedData.tags || [],
+        metaTitleAr: validatedData.metaTitleAr,
+        metaTitleEn: validatedData.metaTitleEn,
+        metaDescAr: validatedData.metaDescAr,
+        metaDescEn: validatedData.metaDescEn,
         status: 'DRAFT', // يبدأ كمسودة
       },
       include: {
@@ -199,26 +264,47 @@ export async function POST(request: NextRequest) {
             id: true,
             username: true,
             fullName: true,
-            profileImage: true,
+            profilePicture: true,
+            isVerified: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            nameAr: true,
+            nameEn: true,
+            slug: true,
           },
         },
       },
     })
 
-    // خصم رسوم النشر من رصيد البائع (سيتم تفعيله بعد إضافة نظام الدفع)
-    // await prisma.user.update({
-    //   where: { id: session.user.id },
-    //   data: { balance: { decrement: listingFee } },
-    // })
-
-    // إنشاء إشعار للبائع
+    // Create notification
     await prisma.notification.create({
       data: {
         userId: session.user.id,
-        type: 'PRODUCT_CREATED',
-        title: 'تم إنشاء المنتج',
-        message: `تم إنشاء المنتج "${product.title}" بنجاح`,
-        relatedId: product.id,
+        type: 'SYSTEM',
+        title: 'تم إنشاء المنتج بنجاح',
+        message: `تم إنشاء المنتج "${product.titleAr}" كمسودة. يمكنك تعديله ثم نشره للمراجعة.`,
+        link: `/seller/products/${product.id}`,
+        isRead: false,
+      },
+    })
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: 'CREATE_PRODUCT',
+        entityType: 'Product',
+        entityId: product.id,
+        details: {
+          title: product.titleEn,
+          category: category.nameEn,
+          price: product.price.toString(),
+        },
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
       },
     })
 
@@ -231,7 +317,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error: any) {
-    console.error('Error creating product:', error)
+    console.error('❌ Error creating product:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -251,55 +337,39 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// دالة مساعدة لإنشاء slug
-function generateSlug(title: string): string {
-  const arabicToEnglish: { [key: string]: string } = {
-    ا: 'a',
-    ب: 'b',
-    ت: 't',
-    ث: 'th',
-    ج: 'j',
-    ح: 'h',
-    خ: 'kh',
-    د: 'd',
-    ذ: 'dh',
-    ر: 'r',
-    ز: 'z',
-    س: 's',
-    ش: 'sh',
-    ص: 's',
-    ض: 'd',
-    ط: 't',
-    ظ: 'dh',
-    ع: 'a',
-    غ: 'gh',
-    ف: 'f',
-    ق: 'q',
-    ك: 'k',
-    ل: 'l',
-    م: 'm',
-    ن: 'n',
-    ه: 'h',
-    و: 'w',
-    ي: 'y',
-    ة: 'h',
-    ى: 'a',
-    ئ: 'e',
-    ء: 'a',
-  }
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 
-  let slug = title
+/**
+ * Generate unique slug from title
+ * Ensures uniqueness by checking database
+ */
+async function generateUniqueSlug(title: string): Promise<string> {
+  let baseSlug = title
     .toLowerCase()
-    .split('')
-    .map((char) => arabicToEnglish[char] || char)
-    .join('')
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+    .substring(0, 50)
     .trim()
 
-  // إضافة رقم عشوائي للتفرد
-  slug += '-' + Math.random().toString(36).substring(2, 8)
+  let slug = baseSlug
+  let counter = 1
+
+  // Check if slug exists, if yes, append counter
+  while (true) {
+    const existing = await prisma.product.findUnique({
+      where: { slug },
+    })
+
+    if (!existing) {
+      break
+    }
+
+    slug = `${baseSlug}-${counter}`
+    counter++
+  }
 
   return slug
 }
