@@ -1,150 +1,137 @@
+// ============================================
+// MAIN SEED FILE
+// Runs all seeders in correct order
+// ============================================
+
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { Decimal } from '@prisma/client/runtime/library'
+import { productCategories } from './seeds/product-categories'
+import { serviceCategories } from './seeds/service-categories'
+import { projectCategories } from './seeds/project-categories'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Starting database seed...')
+  console.log('🌱 Starting database seeding...')
+  console.log('='.repeat(50))
 
-  // Create Admin User (Razan)
-  const adminPassword = await bcrypt.hash('RazanOSDM@056300', 12)
+  try {
+    // 1. Seed Product Categories (310 categories)
+    console.log('\n📦 Seeding Product Categories...')
+    for (const category of productCategories) {
+      await prisma.productCategory.upsert({
+        where: { slug: category.slug },
+        update: category,
+        create: category,
+      })
+    }
+    console.log(`✅ ${productCategories.length} Product Categories seeded`)
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'razan@osdm.sa' },
-    update: {},
-    create: {
-      email: 'razan@osdm.sa',
-      username: 'Razan@OSDM',
-      password: adminPassword,
-      fullName: 'Razan Taofek',
-      role: 'ADMIN',
-      accountType: 'INDIVIDUAL',
-      country: 'السعودية',
-      city: 'جدة',
-      isEmailVerified: true,
-      isActive: true,
-      verificationStatus: 'VERIFIED',
-    },
-  })
+    // 2. Seed Service Categories (110 categories)
+    console.log('\n🛠️  Seeding Service Categories...')
+    for (const category of serviceCategories) {
+      await prisma.serviceCategory.upsert({
+        where: { slug: category.slug },
+        update: category,
+        create: category,
+      })
+    }
+    console.log(`✅ ${serviceCategories.length} Service Categories seeded`)
 
-  console.log('✅ Admin user created:', admin.email)
+    // 3. Seed Project Categories (51 categories)
+    console.log('\n🚀 Seeding Project Categories...')
+    for (const category of projectCategories) {
+      await prisma.projectCategory.upsert({
+        where: { slug: category.slug },
+        update: category,
+        create: category,
+      })
+    }
+    console.log(`✅ ${projectCategories.length} Project Categories seeded`)
 
-  // Create Platform Settings
-  const platformSettings = [
-    {
-      key: 'PLATFORM_FEE',
-      value: { percentage: 25, description: 'عمولة المنصة من كل معاملة' },
-      description: 'نسبة العمولة الافتراضية للمنصة',
-    },
-    {
-      key: 'REGISTRATION_FEE_INDIVIDUAL',
-      value: { amount: 50, currency: 'SAR' },
-      description: 'رسوم التسجيل للأفراد',
-    },
-    {
-      key: 'REGISTRATION_FEE_COMPANY',
-      value: { amount: 500, currency: 'SAR' },
-      description: 'رسوم التسجيل للشركات',
-    },
-    {
-      key: 'PRODUCT_LISTING_FEE',
-      value: { amount: 50, currency: 'SAR' },
-      description: 'رسوم نشر منتج',
-    },
-    {
-      key: 'PREMIUM_SUBSCRIPTION_INDIVIDUAL',
-      value: { amount: 100, currency: 'SAR', period: 'MONTHLY' },
-      description: 'اشتراك مميز للأفراد',
-    },
-    {
-      key: 'PREMIUM_SUBSCRIPTION_STARTUP',
-      value: { amount: 500, currency: 'SAR', period: 'MONTHLY' },
-      description: 'اشتراك مميز للشركات الناشئة',
-    },
-    {
-      key: 'PREMIUM_SUBSCRIPTION_ENTERPRISE',
-      value: { amount: 1000, currency: 'SAR', period: 'MONTHLY' },
-      description: 'اشتراك مميز للشركات الكبرى',
-    },
-    {
-      key: 'SUPPORT_EMAIL',
-      value: 'app.osdm@gmail.com',
-      description: 'البريد الإلكتروني للدعم',
-    },
-    {
-      key: 'SUPPORT_PHONE',
-      value: '+966544827213',
-      description: 'رقم الدعم',
-    },
-  ]
+    // 4. Seed Admin User (Razan@OSDM)
+    console.log('\n🔐 Seeding Admin User...')
+    const hashedPassword = await bcrypt.hash('RazanOSDM@056300', 10)
 
-  for (const setting of platformSettings) {
-    await prisma.platformSettings.upsert({
-      where: { key: setting.key },
-      update: { value: setting.value },
-      create: setting,
-    })
-  }
-
-  console.log('✅ Platform settings created')
-
-  // Create demo seller
-  const demoSellerPassword = await bcrypt.hash('Demo123456!', 12)
-  const demoSeller = await prisma.user.upsert({
-    where: { email: 'seller@demo.osdm.sa' },
-    update: {},
-    create: {
-      email: 'seller@demo.osdm.sa',
-      username: 'DemoSeller',
-      password: demoSellerPassword,
-      fullName: 'بائع تجريبي',
-      role: 'SELLER',
-      accountType: 'INDIVIDUAL',
-      country: 'السعودية',
-      city: 'الرياض',
-      isEmailVerified: true,
-      isActive: true,
-      verificationStatus: 'VERIFIED',
-      sellerProfile: {
-        create: {
-          bio: 'بائع متخصص في المنتجات الرقمية',
-          skills: ['تصميم', 'برمجة', 'كتابة محتوى'],
-          languages: ['العربية', 'English'],
-          verifiedBadge: true,
-        },
+    const admin = await prisma.user.upsert({
+      where: { username: 'Razan@OSDM' },
+      update: {},
+      create: {
+        username: 'Razan@OSDM',
+        email: 'admin@osdm.com',
+        password: hashedPassword,
+        fullName: 'Razan OSDM Admin',
+        role: 'ADMIN',
+        userType: 'INDIVIDUAL',
+        country: 'Saudi Arabia',
+        phoneNumber: '+966500000000',
+        bio: 'Platform Administrator',
+        isVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
-    },
-  })
+    })
+    console.log('✅ Admin User created:', {
+      username: admin.username,
+      email: admin.email,
+      role: admin.role,
+    })
 
-  console.log('✅ Demo seller created:', demoSeller.email)
+    // 5. Seed Revenue Settings (25% + 5%)
+    console.log('\n💰 Seeding Revenue Settings...')
+    const settings = await prisma.revenueSettings.upsert({
+      where: { id: 'default-revenue-settings' },
+      update: {
+        platformCommission: new Decimal(25.00),
+        paymentGatewayFee: new Decimal(5.00),
+        individualPrice: new Decimal(100.00),
+        smePrice: new Decimal(250.00),
+        largePrice: new Decimal(500.00),
+        disputeWindowDays: 7,
+        updatedAt: new Date(),
+      },
+      create: {
+        id: 'default-revenue-settings',
+        platformCommission: new Decimal(25.00),
+        paymentGatewayFee: new Decimal(5.00),
+        individualPrice: new Decimal(100.00),
+        smePrice: new Decimal(250.00),
+        largePrice: new Decimal(500.00),
+        disputeWindowDays: 7,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    })
+    console.log('✅ Revenue Settings created:', {
+      platformCommission: `${settings.platformCommission}%`,
+      paymentGatewayFee: `${settings.paymentGatewayFee}%`,
+      individualPrice: `${settings.individualPrice} SAR`,
+      smePrice: `${settings.smePrice} SAR`,
+      largePrice: `${settings.largePrice} SAR`,
+      disputeWindowDays: `${settings.disputeWindowDays} days`,
+    })
 
-  // Create demo buyer
-  const demoBuyerPassword = await bcrypt.hash('Demo123456!', 12)
-  const demoBuyer = await prisma.user.upsert({
-    where: { email: 'buyer@demo.osdm.sa' },
-    update: {},
-    create: {
-      email: 'buyer@demo.osdm.sa',
-      username: 'DemoBuyer',
-      password: demoBuyerPassword,
-      fullName: 'مشتري تجريبي',
-      role: 'BUYER',
-      accountType: 'INDIVIDUAL',
-      country: 'السعودية',
-      city: 'جدة',
-      isEmailVerified: true,
-      isActive: true,
-    },
-  })
+    console.log('\n' + '='.repeat(50))
+    console.log('🎉 Database seeding completed successfully!')
+    console.log('='.repeat(50))
+    console.log('\n📊 Summary:')
+    console.log(`   - Product Categories: ${productCategories.length}`)
+    console.log(`   - Service Categories: ${serviceCategories.length}`)
+    console.log(`   - Project Categories: ${projectCategories.length}`)
+    console.log(`   - Admin User: 1`)
+    console.log(`   - Revenue Settings: 1`)
+    console.log(`   - Total Records: ${productCategories.length + serviceCategories.length + projectCategories.length + 2}`)
 
-  console.log('✅ Demo buyer created:', demoBuyer.email)
-
-  console.log('🎉 Seed completed successfully!')
+  } catch (error) {
+    console.error('❌ Error seeding database:', error)
+    throw error
+  }
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed error:', e)
+    console.error(e)
     process.exit(1)
   })
   .finally(async () => {
