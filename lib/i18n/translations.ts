@@ -130,6 +130,104 @@ export const translations = {
     invalidCredentials: "البريد الإلكتروني أو اسم المستخدم أو كلمة المرور غير صحيحة",
     accountSuspended: "تم تعليق هذا الحساب. يرجى التواصل مع الدعم الفني",
     loginError: "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى",
+
+    // Dashboard Common
+    dashboard: "لوحة التحكم",
+    overview: "نظرة عامة",
+    myDashboard: "لوحة التحكم الخاصة بي",
+    buyer: "مشتري",
+    seller: "بائع",
+    switchRole: "تبديل الدور",
+    products: "المنتجات",
+    services: "الخدمات",
+    projects: "المشاريع",
+
+    // Marketplace
+    marketplace: "السوق",
+    browseAll: "تصفح الكل",
+    categories: "التصنيفات",
+    filters: "الفلاتر",
+    sortBy: "ترتيب حسب",
+    priceRange: "نطاق السعر",
+    rating: "التقييم",
+    newest: "الأحدث",
+    popular: "الأكثر شعبية",
+    topRated: "الأعلى تقييمًا",
+
+    // Products Market
+    productMarket: "سوق المنتجات",
+    digitalProducts: "المنتجات الرقمية",
+    instantDownload: "تحميل فوري",
+    viewDetails: "عرض التفاصيل",
+    addToCart: "أضف إلى السلة",
+    buyNow: "اشترِ الآن",
+
+    // Services Market
+    serviceMarket: "سوق الخدمات",
+    customServices: "الخدمات المتخصصة",
+    packages: "الباقات",
+    basic: "أساسي",
+    standard: "قياسي",
+    premium: "مميز",
+    orderNow: "اطلب الآن",
+
+    // Projects Market
+    projectMarket: "سوق المشاريع",
+    freelanceOpportunities: "فرص العمل الحر",
+    budget: "الميزانية",
+    deadline: "الموعد النهائي",
+    proposals: "العروض",
+    submitProposal: "قدّم عرضك",
+
+    // Wallet & Payments
+    wallet: "المحفظة",
+    balance: "الرصيد",
+    earnings: "الأرباح",
+    withdraw: "سحب",
+    transactions: "المعاملات",
+    paymentMethods: "طرق الدفع",
+    escrow: "الضمان",
+
+    // Orders & Contracts
+    orders: "الطلبات",
+    activeOrders: "الطلبات النشطة",
+    completedOrders: "الطلبات المكتملة",
+    contracts: "العقود",
+    activeContracts: "العقود النشطة",
+    milestones: "المعالم",
+
+    // Reviews & Ratings
+    reviews: "التقييمات",
+    writeReview: "اكتب تقييم",
+    stars: "نجوم",
+
+    // Messages
+    messages: "الرسائل",
+    inbox: "صندوق الوارد",
+    sendMessage: "إرسال رسالة",
+
+    // Settings
+    settings: "الإعدادات",
+    profile: "الملف الشخصي",
+    accountSettings: "إعدادات الحساب",
+
+    // Actions
+    view: "عرض",
+    edit: "تعديل",
+    delete: "حذف",
+    save: "حفظ",
+    cancel: "إلغاء",
+    confirm: "تأكيد",
+    submit: "إرسال",
+    download: "تحميل",
+    upload: "رفع",
+
+    // Status
+    pending: "معلق",
+    active: "نشط",
+    completed: "مكتمل",
+    cancelled: "ملغي",
+    disputed: "متنازع عليه",
   },
   en: {
     // Header
@@ -271,6 +369,104 @@ export const translations = {
     invalidCredentials: "Invalid email/username or password",
     accountSuspended: "This account has been suspended. Please contact support",
     loginError: "An error occurred during login. Please try again",
+
+    // Dashboard Common
+    dashboard: "Dashboard",
+    overview: "Overview",
+    myDashboard: "My Dashboard",
+    buyer: "Buyer",
+    seller: "Seller",
+    switchRole: "Switch Role",
+    products: "Products",
+    services: "Services",
+    projects: "Projects",
+
+    // Marketplace
+    marketplace: "Marketplace",
+    browseAll: "Browse All",
+    categories: "Categories",
+    filters: "Filters",
+    sortBy: "Sort By",
+    priceRange: "Price Range",
+    rating: "Rating",
+    newest: "Newest",
+    popular: "Popular",
+    topRated: "Top Rated",
+
+    // Products Market
+    productMarket: "Products Market",
+    digitalProducts: "Digital Products",
+    instantDownload: "Instant Download",
+    viewDetails: "View Details",
+    addToCart: "Add to Cart",
+    buyNow: "Buy Now",
+
+    // Services Market
+    serviceMarket: "Services Market",
+    customServices: "Custom Services",
+    packages: "Packages",
+    basic: "Basic",
+    standard: "Standard",
+    premium: "Premium",
+    orderNow: "Order Now",
+
+    // Projects Market
+    projectMarket: "Projects Market",
+    freelanceOpportunities: "Freelance Opportunities",
+    budget: "Budget",
+    deadline: "Deadline",
+    proposals: "Proposals",
+    submitProposal: "Submit Proposal",
+
+    // Wallet & Payments
+    wallet: "Wallet",
+    balance: "Balance",
+    earnings: "Earnings",
+    withdraw: "Withdraw",
+    transactions: "Transactions",
+    paymentMethods: "Payment Methods",
+    escrow: "Escrow",
+
+    // Orders & Contracts
+    orders: "Orders",
+    activeOrders: "Active Orders",
+    completedOrders: "Completed Orders",
+    contracts: "Contracts",
+    activeContracts: "Active Contracts",
+    milestones: "Milestones",
+
+    // Reviews & Ratings
+    reviews: "Reviews",
+    writeReview: "Write Review",
+    stars: "Stars",
+
+    // Messages
+    messages: "Messages",
+    inbox: "Inbox",
+    sendMessage: "Send Message",
+
+    // Settings
+    settings: "Settings",
+    profile: "Profile",
+    accountSettings: "Account Settings",
+
+    // Actions
+    view: "View",
+    edit: "Edit",
+    delete: "Delete",
+    save: "Save",
+    cancel: "Cancel",
+    confirm: "Confirm",
+    submit: "Submit",
+    download: "Download",
+    upload: "Upload",
+
+    // Status
+    pending: "Pending",
+    active: "Active",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    disputed: "Disputed",
   },
 } as const
 
