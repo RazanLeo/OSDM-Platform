@@ -3,169 +3,33 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { useLanguage } from "@/lib/i18n/language-provider"
 import { Briefcase, Plus, TrendingUp, Clock, MessageSquare, Upload, CheckCircle } from "lucide-react"
-import { useSession } from "next-auth/react"
-import { useEffect, useState } from "react"
 import { Progress } from "@/components/ui/progress"
+import Link from "next/link"
+import type { Locale } from "@/lib/i18n/config"
 
-interface ServiceOrder {
-  id: string
-  service: {
-    titleAr: string
-    titleEn: string
+interface SellerServicesDashboardProps {
+  services: any[]
+  orders: any[]
+  stats: {
+    totalServices: number
+    activeOrders: number
+    completedOrders: number
+    totalRevenue: number
+    pendingDeliveries: number
   }
-  buyer: {
-    name: string
-    avatar?: string
-  }
-  package: "BASIC" | "STANDARD" | "PREMIUM"
-  amount: number
-  status: "PENDING" | "IN_PROGRESS" | "DELIVERED" | "COMPLETED" | "CANCELLED"
-  orderedAt: string
-  deadline: string
-  progress: number
-  unreadMessages: number
+  locale: Locale
+  translations: any
 }
 
-interface Service {
-  id: string
-  titleAr: string
-  titleEn: string
-  orders: number
-  revenue: number
-  rating: number
-  isActive: boolean
-}
-
-export function SellerServicesDashboard() {
-  const { t, isRTL } = useLanguage()
-  const { data: session } = useSession()
-  const [orders, setOrders] = useState<ServiceOrder[]>([])
-  const [services, setServices] = useState<Service[]>([])
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalServices: 0,
-    activeOrders: 0,
-    completedOrders: 0,
-    totalRevenue: 0,
-    pendingDeliveries: 0,
-  })
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      const mockOrders: ServiceOrder[] = [
-        {
-          id: "so1",
-          service: {
-            titleAr: "تصميم شعار احترافي",
-            titleEn: "Professional Logo Design",
-          },
-          buyer: {
-            name: "محمد أحمد",
-          },
-          package: "PREMIUM",
-          amount: 500,
-          status: "IN_PROGRESS",
-          orderedAt: "2025-10-09T10:00:00Z",
-          deadline: "2025-10-14T10:00:00Z",
-          progress: 75,
-          unreadMessages: 2,
-        },
-        {
-          id: "so2",
-          service: {
-            titleAr: "كتابة محتوى تسويقي",
-            titleEn: "Marketing Content Writing",
-          },
-          buyer: {
-            name: "سارة علي",
-          },
-          package: "STANDARD",
-          amount: 350,
-          status: "PENDING",
-          orderedAt: "2025-10-10T14:00:00Z",
-          deadline: "2025-10-17T14:00:00Z",
-          progress: 0,
-          unreadMessages: 0,
-        },
-        {
-          id: "so3",
-          service: {
-            titleAr: "تطوير موقع ووردبريس",
-            titleEn: "WordPress Website Development",
-          },
-          buyer: {
-            name: "أحمد خالد",
-          },
-          package: "BASIC",
-          amount: 800,
-          status: "DELIVERED",
-          orderedAt: "2025-09-20T09:00:00Z",
-          deadline: "2025-10-05T09:00:00Z",
-          progress: 100,
-          unreadMessages: 1,
-        },
-      ]
-
-      const mockServices: Service[] = [
-        {
-          id: "s1",
-          titleAr: "تصميم شعار احترافي",
-          titleEn: "Professional Logo Design",
-          orders: 45,
-          revenue: 22500,
-          rating: 4.9,
-          isActive: true,
-        },
-        {
-          id: "s2",
-          titleAr: "كتابة محتوى تسويقي",
-          titleEn: "Marketing Content Writing",
-          orders: 32,
-          revenue: 11200,
-          rating: 4.8,
-          isActive: true,
-        },
-        {
-          id: "s3",
-          titleAr: "تطوير موقع ووردبريس",
-          titleEn: "WordPress Development",
-          orders: 18,
-          revenue: 14400,
-          rating: 5.0,
-          isActive: true,
-        },
-      ]
-
-      setOrders(mockOrders)
-      setServices(mockServices)
-
-      setStats({
-        totalServices: mockServices.length,
-        activeOrders: mockOrders.filter((o) => o.status === "IN_PROGRESS" || o.status === "PENDING").length,
-        completedOrders: mockOrders.filter((o) => o.status === "COMPLETED").length,
-        totalRevenue: mockServices.reduce((sum, s) => sum + s.revenue, 0),
-        pendingDeliveries: mockOrders.filter((o) => o.status === "DELIVERED").length,
-      })
-      setLoading(false)
-    }
-
-    if (session) {
-      fetchData()
-    }
-  }, [session])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
+export function SellerServicesDashboard({
+  services,
+  orders,
+  stats,
+  locale,
+  translations: t
+}: SellerServicesDashboardProps) {
+  const isArabic = locale === "ar"
 
   return (
     <div className="space-y-6">
@@ -173,19 +37,21 @@ export function SellerServicesDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Briefcase className="h-8 w-8" />
-            {isRTL ? "خدماتي - الخدمات المتخصصة" : "My Services - Custom Services"}
+            <Briefcase className="h-8 w-8 text-[#4691A9]" />
+            {isArabic ? "خدماتي - الخدمات المتخصصة" : "My Services - Custom Services"}
           </h1>
           <p className="text-muted-foreground mt-2">
-            {isRTL
-              ? "إدارة خدماتك وطلبات العملاء"
-              : "Manage your services and customer orders"}
+            {isArabic
+              ? "إدارة خدماتك وطلبات العملاء (Fiverr + Khamsat)"
+              : "Manage your services and customer orders (Fiverr + Khamsat)"}
           </p>
         </div>
-        <Button size="lg" className="gap-2">
-          <Plus className="h-5 w-5" />
-          {isRTL ? "إضافة خدمة جديدة" : "Add New Service"}
-        </Button>
+        <Link href={`/${locale}/seller/services/new`}>
+          <Button size="lg" className="gap-2 bg-gradient-to-r from-[#4691A9] to-[#89A58F]">
+            <Plus className="h-5 w-5" />
+            {isArabic ? "إضافة خدمة جديدة" : "Add New Service"}
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Cards */}
@@ -193,13 +59,13 @@ export function SellerServicesDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {isRTL ? "إجمالي الخدمات" : "Total Services"}
+              {isArabic ? "إجمالي الخدمات" : "Total Services"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalServices}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {isRTL ? "خدمة منشورة" : "Published services"}
+              {isArabic ? "خدمة منشورة" : "Published services"}
             </p>
           </CardContent>
         </Card>
@@ -207,14 +73,14 @@ export function SellerServicesDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {isRTL ? "طلبات نشطة" : "Active Orders"}
+              {isArabic ? "طلبات نشطة" : "Active Orders"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeOrders}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
               <Clock className="h-3 w-3" />
-              {isRTL ? "يحتاج إجراء" : "Needs action"}
+              {isArabic ? "يحتاج إجراء" : "Needs action"}
             </p>
           </CardContent>
         </Card>
@@ -222,14 +88,14 @@ export function SellerServicesDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {isRTL ? "طلبات مكتملة" : "Completed"}
+              {isArabic ? "طلبات مكتملة" : "Completed"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.completedOrders}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
               <TrendingUp className="h-3 w-3 text-green-500" />
-              {isRTL ? "+8% هذا الشهر" : "+8% this month"}
+              {isArabic ? "إجمالي المكتمل" : "total completed"}
             </p>
           </CardContent>
         </Card>
@@ -237,14 +103,14 @@ export function SellerServicesDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {isRTL ? "إجمالي الإيرادات" : "Total Revenue"}
+              {isArabic ? "إجمالي الإيرادات" : "Total Revenue"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()} ر.س</div>
+            <div className="text-2xl font-bold">{stats.totalRevenue.toFixed(2)} {t.sar}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
               <TrendingUp className="h-3 w-3 text-green-500" />
-              {isRTL ? "+12% هذا الشهر" : "+12% this month"}
+              {isArabic ? "صافي أرباحك" : "net earnings"}
             </p>
           </CardContent>
         </Card>
@@ -252,13 +118,13 @@ export function SellerServicesDashboard() {
         <Card className="bg-gradient-to-br from-[#4691A9] to-[#89A58F] text-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-white/90">
-              {isRTL ? "تسليمات معلقة" : "Pending Deliveries"}
+              {isArabic ? "تسليمات معلقة" : "Pending Deliveries"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingDeliveries}</div>
             <p className="text-xs text-white/80 mt-1">
-              {isRTL ? "بانتظار قبول العميل" : "Awaiting client approval"}
+              {isArabic ? "بانتظار قبول العميل" : "Awaiting client approval"}
             </p>
           </CardContent>
         </Card>
@@ -267,22 +133,22 @@ export function SellerServicesDashboard() {
       {/* Active Orders */}
       <Card>
         <CardHeader>
-          <CardTitle>{isRTL ? "الطلبات النشطة" : "Active Orders"}</CardTitle>
+          <CardTitle>{isArabic ? "الطلبات النشطة" : "Active Orders"}</CardTitle>
           <CardDescription>
-            {isRTL
+            {isArabic
               ? "الطلبات التي تحتاج إلى إجراء منك"
               : "Orders that need your attention"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {orders.filter((o) => o.status !== "COMPLETED" && o.status !== "CANCELLED").length === 0 ? (
+          {orders.filter((o: any) => o.status !== "COMPLETED" && o.status !== "CANCELLED").length === 0 ? (
             <div className="text-center py-12">
               <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                {isRTL ? "لا توجد طلبات نشطة" : "No active orders"}
+                {isArabic ? "لا توجد طلبات نشطة" : "No active orders"}
               </h3>
               <p className="text-muted-foreground">
-                {isRTL
+                {isArabic
                   ? "جميع طلباتك مكتملة. عمل رائع!"
                   : "All your orders are completed. Great job!"}
               </p>
@@ -290,8 +156,8 @@ export function SellerServicesDashboard() {
           ) : (
             <div className="space-y-4">
               {orders
-                .filter((o) => o.status !== "COMPLETED" && o.status !== "CANCELLED")
-                .map((order) => (
+                .filter((o: any) => o.status !== "COMPLETED" && o.status !== "CANCELLED")
+                .map((order: any) => (
                   <Card key={order.id}>
                     <CardContent className="pt-6">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -299,10 +165,10 @@ export function SellerServicesDashboard() {
                           <div className="flex items-start justify-between mb-3">
                             <div>
                               <h3 className="font-semibold text-lg">
-                                {isRTL ? order.service.titleAr : order.service.titleEn}
+                                {isArabic ? order.service.titleAr : order.service.titleEn}
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                {isRTL ? "العميل:" : "Client:"} {order.buyer.name}
+                                {isArabic ? "العميل:" : "Client:"} {order.buyer.name || order.buyer.fullName}
                               </p>
                             </div>
                             <Badge
@@ -315,14 +181,14 @@ export function SellerServicesDashboard() {
                               }
                             >
                               {order.status === "IN_PROGRESS"
-                                ? isRTL
+                                ? isArabic
                                   ? "قيد التنفيذ"
                                   : "In Progress"
                                 : order.status === "DELIVERED"
-                                ? isRTL
+                                ? isArabic
                                   ? "تم التسليم"
                                   : "Delivered"
-                                : isRTL
+                                : isArabic
                                 ? "جديد"
                                 : "New"}
                             </Badge>
@@ -331,51 +197,46 @@ export function SellerServicesDashboard() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                             <div>
                               <p className="text-xs text-muted-foreground">
-                                {isRTL ? "الباقة" : "Package"}
+                                {isArabic ? "الباقة" : "Package"}
                               </p>
                               <p className="font-medium">
                                 {order.package === "BASIC"
-                                  ? isRTL
+                                  ? isArabic
                                     ? "أساسي"
                                     : "Basic"
                                   : order.package === "STANDARD"
-                                  ? isRTL
+                                  ? isArabic
                                     ? "قياسي"
                                     : "Standard"
-                                  : isRTL
+                                  : isArabic
                                   ? "مميز"
                                   : "Premium"}
                               </p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground">
-                                {isRTL ? "المبلغ" : "Amount"}
+                                {isArabic ? "المبلغ" : "Amount"}
                               </p>
                               <p className="font-medium text-green-600">
-                                {order.amount.toLocaleString()} ر.س
+                                {Number(order.amount).toFixed(2)} {t.sar}
                               </p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground">
-                                {isRTL ? "الموعد النهائي" : "Deadline"}
+                                {isArabic ? "الموعد النهائي" : "Deadline"}
                               </p>
                               <p className="font-medium">
-                                {new Date(order.deadline).toLocaleDateString(
-                                  isRTL ? "ar-SA" : "en-US"
+                                {new Date(order.deadline || order.createdAt).toLocaleDateString(
+                                  isArabic ? "ar-SA" : "en-US"
                                 )}
                               </p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground">
-                                {isRTL ? "الرسائل" : "Messages"}
+                                {isArabic ? "الرسائل" : "Messages"}
                               </p>
                               <p className="font-medium flex items-center gap-1">
                                 <MessageSquare className="h-3 w-3" />
-                                {order.unreadMessages > 0 && (
-                                  <Badge variant="destructive" className="text-xs px-1">
-                                    {order.unreadMessages}
-                                  </Badge>
-                                )}
                               </p>
                             </div>
                           </div>
@@ -384,11 +245,11 @@ export function SellerServicesDashboard() {
                             <div className="space-y-2">
                               <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">
-                                  {isRTL ? "التقدم:" : "Progress:"}
+                                  {isArabic ? "التقدم:" : "Progress:"}
                                 </span>
-                                <span className="font-medium">{order.progress}%</span>
+                                <span className="font-medium">{order.progress || 0}%</span>
                               </div>
-                              <Progress value={order.progress} className="h-2" />
+                              <Progress value={order.progress || 0} className="h-2" />
                             </div>
                           )}
                         </div>
@@ -397,23 +258,18 @@ export function SellerServicesDashboard() {
                           {order.status === "PENDING" && (
                             <Button className="w-full">
                               <CheckCircle className="h-4 w-4 mr-2" />
-                              {isRTL ? "بدء العمل" : "Start Work"}
+                              {isArabic ? "بدء العمل" : "Start Work"}
                             </Button>
                           )}
                           {order.status === "IN_PROGRESS" && (
                             <Button className="w-full">
                               <Upload className="h-4 w-4 mr-2" />
-                              {isRTL ? "تسليم العمل" : "Deliver Work"}
+                              {isArabic ? "تسليم العمل" : "Deliver Work"}
                             </Button>
                           )}
                           <Button variant="outline" className="w-full">
                             <MessageSquare className="h-4 w-4 mr-2" />
-                            {isRTL ? "المحادثة" : "Messages"}
-                            {order.unreadMessages > 0 && (
-                              <Badge variant="destructive" className="ml-2 text-xs">
-                                {order.unreadMessages}
-                              </Badge>
-                            )}
+                            {isArabic ? "المحادثة" : "Messages"}
                           </Button>
                         </div>
                       </div>
@@ -428,57 +284,81 @@ export function SellerServicesDashboard() {
       {/* My Services */}
       <Card>
         <CardHeader>
-          <CardTitle>{isRTL ? "خدماتي المنشورة" : "My Published Services"}</CardTitle>
+          <CardTitle>{isArabic ? "خدماتي المنشورة" : "My Published Services"}</CardTitle>
           <CardDescription>
-            {isRTL ? "جميع خدماتك مع الإحصائيات" : "All your services with statistics"}
+            {isArabic ? "جميع خدماتك مع الإحصائيات" : "All your services with statistics"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => (
-              <Card key={service.id}>
-                <CardContent className="pt-6">
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="font-semibold">
-                        {isRTL ? service.titleAr : service.titleEn}
-                      </h3>
-                      <Badge variant={service.isActive ? "default" : "secondary"} className="mt-2">
-                        {service.isActive ? (isRTL ? "نشط" : "Active") : (isRTL ? "موقوف" : "Inactive")}
-                      </Badge>
-                    </div>
+          {services.length === 0 ? (
+            <div className="text-center py-12">
+              <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                {isArabic ? "لا توجد خدمات بعد" : "No services yet"}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {isArabic
+                  ? "ابدأ بإضافة أول خدمة لك وابدأ البيع"
+                  : "Start by adding your first service and start selling"}
+              </p>
+              <Link href={`/${locale}/seller/services/new`}>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isArabic ? "إضافة خدمة" : "Add Service"}
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {services.map((service: any) => (
+                <Card key={service.id}>
+                  <CardContent className="pt-6">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-semibold">
+                          {isArabic ? service.titleAr : service.titleEn}
+                        </h3>
+                        <Badge variant={service.status === "APPROVED" ? "default" : "secondary"} className="mt-2">
+                          {service.status === "APPROVED" ? (isArabic ? "نشط" : "Active") : (isArabic ? service.status === "PENDING" ? "قيد المراجعة" : "موقوف" : service.status)}
+                        </Badge>
+                      </div>
 
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="bg-muted/50 rounded p-2">
-                        <p className="text-xs text-muted-foreground">{isRTL ? "طلبات" : "Orders"}</p>
-                        <p className="font-bold">{service.orders}</p>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-muted/50 rounded p-2">
+                          <p className="text-xs text-muted-foreground">{isArabic ? "طلبات" : "Orders"}</p>
+                          <p className="font-bold">{service._count?.orders || 0}</p>
+                        </div>
+                        <div className="bg-muted/50 rounded p-2">
+                          <p className="text-xs text-muted-foreground">{isArabic ? "تقييم" : "Rating"}</p>
+                          <p className="font-bold flex items-center justify-center gap-1">
+                            {Number(service.averageRating || 0).toFixed(1)}
+                            <span className="text-yellow-500">★</span>
+                          </p>
+                        </div>
+                        <div className="bg-muted/50 rounded p-2">
+                          <p className="text-xs text-muted-foreground">{isArabic ? "مراجعات" : "Reviews"}</p>
+                          <p className="font-bold text-sm">{service._count?.reviews || 0}</p>
+                        </div>
                       </div>
-                      <div className="bg-muted/50 rounded p-2">
-                        <p className="text-xs text-muted-foreground">{isRTL ? "إيرادات" : "Revenue"}</p>
-                        <p className="font-bold text-sm">{(service.revenue / 1000).toFixed(0)}k</p>
-                      </div>
-                      <div className="bg-muted/50 rounded p-2">
-                        <p className="text-xs text-muted-foreground">{isRTL ? "تقييم" : "Rating"}</p>
-                        <p className="font-bold flex items-center justify-center gap-1">
-                          {service.rating}
-                          <span className="text-yellow-500">★</span>
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1">
-                        {isRTL ? "تعديل" : "Edit"}
-                      </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
-                        {isRTL ? "إحصائيات" : "Stats"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Link href={`/${locale}/seller/services/${service.id}/edit`} className="flex-1">
+                          <Button size="sm" variant="outline" className="w-full">
+                            {isArabic ? "تعديل" : "Edit"}
+                          </Button>
+                        </Link>
+                        <Link href={`/${locale}/services/${service.slug}`} className="flex-1">
+                          <Button size="sm" variant="outline" className="w-full">
+                            {isArabic ? "عرض" : "View"}
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
