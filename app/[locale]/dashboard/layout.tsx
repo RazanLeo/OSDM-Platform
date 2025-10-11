@@ -30,46 +30,39 @@ export default function DashboardLayout({
 
   const navItems = [
     {
+      id: "overview",
       titleAr: "لوحة التحكم",
       titleEn: "Dashboard",
       href: `/${locale}/dashboard`,
       icon: LayoutDashboard,
     },
     {
-      titleAr: "المنتجات",
-      titleEn: "Products",
+      id: "seller",
+      titleAr: "لوحة البائع",
+      titleEn: "Seller Dashboard",
       href: `/${locale}/dashboard/seller`,
       icon: Package,
     },
     {
-      titleAr: "الخدمات",
-      titleEn: "Services",
-      href: `/${locale}/dashboard/seller`,
-      icon: Briefcase,
-    },
-    {
-      titleAr: "المشاريع",
-      titleEn: "Projects",
-      href: `/${locale}/dashboard/seller`,
-      icon: FolderKanban,
-    },
-    {
-      titleAr: "المشتريات",
-      titleEn: "Purchases",
+      id: "buyer",
+      titleAr: "لوحة المشتري",
+      titleEn: "Buyer Dashboard",
       href: `/${locale}/dashboard/buyer`,
       icon: ShoppingCart,
     },
     {
+      id: "admin",
+      titleAr: "لوحة الإدارة",
+      titleEn: "Admin Dashboard",
+      href: `/${locale}/dashboard/admin`,
+      icon: Settings,
+    },
+    {
+      id: "profile",
       titleAr: "الملف الشخصي",
       titleEn: "Profile",
       href: `/${locale}/dashboard/user`,
       icon: User,
-    },
-    {
-      titleAr: "الإعدادات",
-      titleEn: "Settings",
-      href: `/${locale}/dashboard/user`,
-      icon: Settings,
     },
   ]
 
@@ -95,7 +88,7 @@ export default function DashboardLayout({
                 const Icon = item.icon
                 const isActive = pathname === item.href
                 return (
-                  <Link key={item.href} href={item.href}>
+                  <Link key={item.id} href={item.href}>
                     <Button
                       variant={isActive ? "secondary" : "ghost"}
                       className={cn(
