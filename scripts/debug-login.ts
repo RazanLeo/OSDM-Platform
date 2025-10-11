@@ -25,8 +25,8 @@ async function debugLogin() {
 
     if (user.password) {
       // Test password
-      const testPass = user.email === 'admin@osdm.sa' ? '123456' :
-                       user.email === 'Guest@osdm.sa' ? '123456' :
+      const testPass = user.email === 'admin@osdm.sa' ? 'admin@123456' :
+                       user.email === 'Guest@osdm.sa' ? 'guest@123456' :
                        'RazanOSDM@056300'
 
       const valid = await bcrypt.compare(testPass, user.password)
@@ -52,7 +52,7 @@ async function debugLogin() {
   })
 
   if (testUser && testUser.password) {
-    const isValid = await bcrypt.compare('123456', testUser.password)
+    const isValid = await bcrypt.compare('admin@123456', testUser.password)
     console.log(`   User found: ✅`)
     console.log(`   Password valid: ${isValid ? '✅' : '❌'}`)
     console.log(`   Would login succeed: ${isValid ? '✅ YES' : '❌ NO'}`)

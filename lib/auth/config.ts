@@ -46,10 +46,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials")
         }
 
-        if (user.isSuspended) {
-          throw new Error("Account suspended")
-        }
-
         // Update last login
         await prisma.user.update({
           where: { id: user.id },
