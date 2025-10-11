@@ -51,31 +51,81 @@ async function main() {
     console.log(`✅ ${projectCategories.length} Project Categories seeded`)
 
     // 4. Seed Admin User (Razan@OSDM)
-    console.log('\n🔐 Seeding Admin User...')
-    const hashedPassword = await bcrypt.hash('RazanOSDM@056300', 10)
+    console.log('\n🔐 Seeding Users...')
 
+    // Main Admin - Razan
+    const adminPassword = await bcrypt.hash('RazanOSDM@056300', 10)
     const admin = await prisma.user.upsert({
       where: { username: 'Razan@OSDM' },
       update: {},
       create: {
         username: 'Razan@OSDM',
-        email: 'admin@osdm.com',
-        password: hashedPassword,
-        fullName: 'Razan OSDM Admin',
+        email: 'razan@osdm.sa',
+        password: adminPassword,
+        fullName: 'رزان توفيق - مديرة المنصة',
         role: 'ADMIN',
         userType: 'INDIVIDUAL',
         country: 'Saudi Arabia',
-        phoneNumber: '+966500000000',
-        bio: 'Platform Administrator',
-        isVerified: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        phone: '+966544827213',
+        bio: 'مديرة ومؤسسة منصة OSDM',
+        emailVerified: true,
+        phoneVerified: true,
       },
     })
-    console.log('✅ Admin User created:', {
+    console.log('✅ Main Admin created:', {
       username: admin.username,
       email: admin.email,
       role: admin.role,
+    })
+
+    // Admin Account - admin@osdm.sa
+    const adminAccountPassword = await bcrypt.hash('123456', 10)
+    const adminAccount = await prisma.user.upsert({
+      where: { email: 'admin@osdm.sa' },
+      update: {},
+      create: {
+        username: 'admin',
+        email: 'admin@osdm.sa',
+        password: adminAccountPassword,
+        fullName: 'حساب المدير',
+        role: 'ADMIN',
+        userType: 'INDIVIDUAL',
+        country: 'Saudi Arabia',
+        phone: '+966500000001',
+        bio: 'حساب تجريبي للمدير',
+        emailVerified: true,
+        phoneVerified: true,
+      },
+    })
+    console.log('✅ Admin Account created:', {
+      username: adminAccount.username,
+      email: adminAccount.email,
+      role: adminAccount.role,
+    })
+
+    // Guest Account - Buyer & Seller
+    const guestPassword = await bcrypt.hash('123456', 10)
+    const guest = await prisma.user.upsert({
+      where: { email: 'Guest@osdm.sa' },
+      update: {},
+      create: {
+        username: 'Guest',
+        email: 'Guest@osdm.sa',
+        password: guestPassword,
+        fullName: 'حساب ضيف تجريبي',
+        role: 'USER',
+        userType: 'INDIVIDUAL',
+        country: 'Saudi Arabia',
+        phone: '+966500000002',
+        bio: 'حساب تجريبي للمشتري والبائع',
+        emailVerified: true,
+        phoneVerified: true,
+      },
+    })
+    console.log('✅ Guest Account created:', {
+      username: guest.username,
+      email: guest.email,
+      role: guest.role,
     })
 
     // 5. Seed Revenue Settings (25% + 5%)
@@ -99,8 +149,6 @@ async function main() {
         smePrice: new Decimal(250.00),
         largePrice: new Decimal(500.00),
         disputeWindowDays: 7,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       },
     })
     console.log('✅ Revenue Settings created:', {
@@ -119,9 +167,13 @@ async function main() {
     console.log(`   - Product Categories: ${productCategories.length}`)
     console.log(`   - Service Categories: ${serviceCategories.length}`)
     console.log(`   - Project Categories: ${projectCategories.length}`)
-    console.log(`   - Admin User: 1`)
+    console.log(`   - Users: 3 (1 Main Admin + 1 Admin + 1 Guest)`)
     console.log(`   - Revenue Settings: 1`)
-    console.log(`   - Total Records: ${productCategories.length + serviceCategories.length + projectCategories.length + 2}`)
+    console.log(`   - Total Records: ${productCategories.length + serviceCategories.length + projectCategories.length + 4}`)
+    console.log('\n🔐 Login Credentials:')
+    console.log('   1️⃣  Main Admin: Razan@OSDM / RazanOSDM@056300')
+    console.log('   2️⃣  Admin: admin@osdm.sa / 123456')
+    console.log('   3️⃣  Guest: Guest@osdm.sa / 123456')
 
   } catch (error) {
     console.error('❌ Error seeding database:', error)

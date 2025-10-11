@@ -72,10 +72,9 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
-    signIn: "/auth/login",
-    signOut: "/auth/logout",
-    error: "/auth/error",
-    verifyRequest: "/auth/verify",
+    signIn: "/login",
+    signOut: "/logout",
+    error: "/error",
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
