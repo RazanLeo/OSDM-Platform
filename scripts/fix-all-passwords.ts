@@ -8,8 +8,8 @@ async function fixAllPasswords() {
     console.log('🔐 Fixing all user passwords...\n')
 
     const testAccounts = [
-      { email: 'admin@osdm.sa', password: '123456' },
-      { email: 'Guest@osdm.sa', password: '123456' },
+      { email: 'admin@osdm.sa', password: 'admin@123456' },
+      { email: 'Guest@osdm.sa', password: 'guest@123456' },
       { email: 'razan@osdm.sa', password: 'RazanOSDM@056300' },
     ]
 
