@@ -128,7 +128,45 @@ async function main() {
       role: guest.role,
     })
 
-    // 5. Seed Revenue Settings (25% + 5%)
+    // 5. Create Wallets for Users
+    console.log('\n💰 Creating Wallets...')
+
+    await prisma.wallet.upsert({
+      where: { userId: admin.id },
+      update: {},
+      create: {
+        userId: admin.id,
+        balance: new Decimal(0),
+        pendingBalance: new Decimal(0),
+        currency: 'SAR',
+      },
+    })
+
+    await prisma.wallet.upsert({
+      where: { userId: adminAccount.id },
+      update: {},
+      create: {
+        userId: adminAccount.id,
+        balance: new Decimal(0),
+        pendingBalance: new Decimal(0),
+        currency: 'SAR',
+      },
+    })
+
+    await prisma.wallet.upsert({
+      where: { userId: guest.id },
+      update: {},
+      create: {
+        userId: guest.id,
+        balance: new Decimal(0),
+        pendingBalance: new Decimal(0),
+        currency: 'SAR',
+      },
+    })
+
+    console.log('✅ Wallets created for all users')
+
+    // 6. Seed Revenue Settings (25% + 5%)
     console.log('\n💰 Seeding Revenue Settings...')
     const settings = await prisma.revenueSettings.upsert({
       where: { id: 'default-revenue-settings' },
@@ -168,8 +206,9 @@ async function main() {
     console.log(`   - Service Categories: ${serviceCategories.length}`)
     console.log(`   - Project Categories: ${projectCategories.length}`)
     console.log(`   - Users: 3 (1 Main Admin + 1 Admin + 1 Guest)`)
+    console.log(`   - Wallets: 3`)
     console.log(`   - Revenue Settings: 1`)
-    console.log(`   - Total Records: ${productCategories.length + serviceCategories.length + projectCategories.length + 4}`)
+    console.log(`   - Total Records: ${productCategories.length + serviceCategories.length + projectCategories.length + 7}`)
     console.log('\n🔐 Login Credentials:')
     console.log('   1️⃣  Main Admin: Razan@OSDM / RazanOSDM@056300')
     console.log('   2️⃣  Admin: admin@osdm.sa / 123456')

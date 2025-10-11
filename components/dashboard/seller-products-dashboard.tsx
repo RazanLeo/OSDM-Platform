@@ -11,120 +11,56 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useLanguage } from "@/lib/i18n/language-provider"
 import { Package, Plus, TrendingUp, DollarSign, Eye, Edit, Trash2, BarChart3 } from "lucide-react"
-import { useSession } from "next-auth/react"
-import { useEffect, useState } from "react"
+import Link from "next/link"
+import type { Locale } from "@/lib/i18n/config"
 
-interface Product {
-  id: string
-  titleAr: string
-  titleEn: string
-  price: number
-  sales: number
-  revenue: number
-  views: number
-  rating: number
-  isActive: boolean
-  createdAt: string
+interface SellerProductsDashboardProps {
+  products: any[]
+  stats: {
+    totalRevenue: number
+    totalSales: number
+    activeProducts: number
+    pendingProducts: number
+    totalProducts: number
+  }
+  locale: Locale
+  translations: any
 }
 
-export function SellerProductsDashboard() {
-  const { t, isRTL } = useLanguage()
-  const { data: session } = useSession()
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    activeProducts: 0,
-    totalSales: 0,
-    totalRevenue: 0,
-    avgRating: 0,
-  })
+export function SellerProductsDashboard({
+  products,
+  stats,
+  locale,
+  translations: t
+}: SellerProductsDashboardProps) {
+  const isArabic = locale === "ar"
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true)
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      const mockProducts: Product[] = [
-        {
-          id: "p1",
-          titleAr: "كتاب تعلم البرمجة بلغة بايثون",
-          titleEn: "Learn Python Programming Book",
-          price: 199,
-          sales: 45,
-          revenue: 8955,
-          views: 523,
-          rating: 4.8,
-          isActive: true,
-          createdAt: "2025-09-01T00:00:00Z",
-        },
-        {
-          id: "p2",
-          titleAr: "قوالب Canva احترافية - 100 تصميم",
-          titleEn: "Professional Canva Templates - 100 Designs",
-          price: 149,
-          sales: 32,
-          revenue: 4768,
-          views: 412,
-          rating: 4.9,
-          isActive: true,
-          createdAt: "2025-08-15T00:00:00Z",
-        },
-        {
-          id: "p3",
-          titleAr: "دورة تصميم UI/UX كاملة",
-          titleEn: "Complete UI/UX Design Course",
-          price: 399,
-          sales: 28,
-          revenue: 11172,
-          views: 891,
-          rating: 5.0,
-          isActive: true,
-          createdAt: "2025-07-20T00:00:00Z",
-        },
-        {
-          id: "p4",
-          titleAr: "قوالب إكسل محاسبية جاهزة",
-          titleEn: "Ready Accounting Excel Templates",
-          price: 99,
-          sales: 18,
-          revenue: 1782,
-          views: 234,
-          rating: 4.6,
-          isActive: false,
-          createdAt: "2025-06-10T00:00:00Z",
-        },
-      ]
-
-      setProducts(mockProducts)
-      const totalRev = mockProducts.reduce((sum, p) => sum + p.revenue, 0)
-      const totalSls = mockProducts.reduce((sum, p) => sum + p.sales, 0)
-      const avgRat = mockProducts.reduce((sum, p) => sum + p.rating, 0) / mockProducts.length
-
-      setStats({
-        totalProducts: mockProducts.length,
-        activeProducts: mockProducts.filter((p) => p.isActive).length,
-        totalSales: totalSls,
-        totalRevenue: totalRev,
-        avgRating: Math.round(avgRat * 10) / 10,
-      })
-      setLoading(false)
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      APPROVED: "default",
+      PENDING: "secondary",
+      DRAFT: "outline",
+      REJECTED: "destructive",
+      SUSPENDED: "destructive"
     }
-
-    if (session) {
-      fetchProducts()
-    }
-  }, [session])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
+    return variants[status] || "outline"
   }
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, { ar: string; en: string }> = {
+      APPROVED: { ar: "معتمد", en: "Approved" },
+      PENDING: { ar: "قيد المراجعة", en: "Pending" },
+      DRAFT: { ar: "مسودة", en: "Draft" },
+      REJECTED: { ar: "مرفوض", en: "Rejected" },
+      SUSPENDED: { ar: "موقوف", en: "Suspended" }
+    }
+    return isArabic ? labels[status]?.ar : labels[status]?.en
+  }
+
+  // Calculate average rating across all products
+  const totalRatings = products.reduce((sum, p) => sum + Number(p.averageRating), 0)
+  const avgRating = products.length > 0 ? (totalRatings / products.length).toFixed(1) : 0
 
   return (
     <div className="space-y-6">
@@ -132,19 +68,21 @@ export function SellerProductsDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Package className="h-8 w-8" />
-            {isRTL ? "منتجاتي - المنتجات الرقمية" : "My Products - Digital Products"}
+            <Package className="h-8 w-8 text-[#846F9C]" />
+            {isArabic ? "منتجاتي الرقمية" : "My Digital Products"}
           </h1>
           <p className="text-muted-foreground mt-2">
-            {isRTL
-              ? "إدارة منتجاتك الرقمية ومتابعة المبيعات"
-              : "Manage your digital products and track sales"}
+            {isArabic
+              ? "إدارة منتجاتك الرقمية ومتابعة المبيعات (Gumroad + Picalica)"
+              : "Manage your digital products and track sales (Gumroad + Picalica)"}
           </p>
         </div>
-        <Button size="lg" className="gap-2">
-          <Plus className="h-5 w-5" />
-          {isRTL ? "إضافة منتج جديد" : "Add New Product"}
-        </Button>
+        <Link href={`/${locale}/seller/products/new`}>
+          <Button size="lg" className="gap-2 bg-gradient-to-r from-[#846F9C] to-[#4691A9]">
+            <Plus className="h-5 w-5" />
+            {isArabic ? "إضافة منتج جديد" : "Add New Product"}
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Cards */}
@@ -152,13 +90,13 @@ export function SellerProductsDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {isRTL ? "إجمالي المنتجات" : "Total Products"}
+              {isArabic ? "إجمالي المنتجات" : "Total Products"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalProducts}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.activeProducts} {isRTL ? "نشط" : "active"}
+              {stats.activeProducts} {isArabic ? "نشط" : "active"}
             </p>
           </CardContent>
         </Card>
@@ -166,14 +104,14 @@ export function SellerProductsDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {isRTL ? "إجمالي المبيعات" : "Total Sales"}
+              {isArabic ? "إجمالي المبيعات" : "Total Sales"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalSales}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
               <TrendingUp className="h-3 w-3 text-green-500" />
-              {isRTL ? "+15% هذا الشهر" : "+15% this month"}
+              {isArabic ? "منتجات مكتملة" : "completed orders"}
             </p>
           </CardContent>
         </Card>
@@ -181,14 +119,14 @@ export function SellerProductsDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {isRTL ? "إجمالي الإيرادات" : "Total Revenue"}
+              {isArabic ? "إجمالي الإيرادات" : "Total Revenue"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()} ر.س</div>
+            <div className="text-2xl font-bold">{stats.totalRevenue.toFixed(2)} {t.sar}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <TrendingUp className="h-3 w-3 text-green-500" />
-              {isRTL ? "+12% هذا الشهر" : "+12% this month"}
+              <DollarSign className="h-3 w-3 text-green-500" />
+              {isArabic ? "صافي أرباحك" : "net earnings"}
             </p>
           </CardContent>
         </Card>
@@ -196,16 +134,16 @@ export function SellerProductsDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {isRTL ? "متوسط التقييم" : "Avg Rating"}
+              {isArabic ? "متوسط التقييم" : "Avg Rating"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold flex items-center gap-1">
-              {stats.avgRating}
+              {avgRating}
               <span className="text-yellow-500">★</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {isRTL ? "عبر جميع المنتجات" : "Across all products"}
+              {isArabic ? "عبر جميع المنتجات" : "across all products"}
             </p>
           </CardContent>
         </Card>
@@ -213,15 +151,13 @@ export function SellerProductsDashboard() {
         <Card className="bg-gradient-to-br from-[#846F9C] to-[#4691A9] text-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-white/90">
-              {isRTL ? "صافي الأرباح" : "Net Earnings"}
+              {isArabic ? "قيد المراجعة" : "Pending Review"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {Math.round(stats.totalRevenue * 0.7).toLocaleString()} ر.س
-            </div>
+            <div className="text-2xl font-bold">{stats.pendingProducts}</div>
             <p className="text-xs text-white/80 mt-1">
-              {isRTL ? "بعد العمولة 30%" : "After 30% commission"}
+              {isArabic ? "منتجات في انتظار الموافقة" : "products awaiting approval"}
             </p>
           </CardContent>
         </Card>
@@ -230,9 +166,9 @@ export function SellerProductsDashboard() {
       {/* Products Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{isRTL ? "جميع المنتجات" : "All Products"}</CardTitle>
+          <CardTitle>{isArabic ? "جميع المنتجات" : "All Products"}</CardTitle>
           <CardDescription>
-            {isRTL
+            {isArabic
               ? "قائمة منتجاتك الرقمية مع الإحصائيات"
               : "List of your digital products with statistics"}
           </CardDescription>
@@ -242,30 +178,32 @@ export function SellerProductsDashboard() {
             <div className="text-center py-12">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                {isRTL ? "لا توجد منتجات بعد" : "No products yet"}
+                {isArabic ? "لا توجد منتجات بعد" : "No products yet"}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {isRTL
+                {isArabic
                   ? "ابدأ بإضافة أول منتج رقمي لك وابدأ البيع"
                   : "Start by adding your first digital product and start selling"}
               </p>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                {isRTL ? "إضافة منتج" : "Add Product"}
-              </Button>
+              <Link href={`/${locale}/seller/products/new`}>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isArabic ? "إضافة منتج" : "Add Product"}
+                </Button>
+              </Link>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{isRTL ? "المنتج" : "Product"}</TableHead>
-                  <TableHead>{isRTL ? "السعر" : "Price"}</TableHead>
-                  <TableHead>{isRTL ? "المبيعات" : "Sales"}</TableHead>
-                  <TableHead>{isRTL ? "الإيرادات" : "Revenue"}</TableHead>
-                  <TableHead>{isRTL ? "المشاهدات" : "Views"}</TableHead>
-                  <TableHead>{isRTL ? "التقييم" : "Rating"}</TableHead>
-                  <TableHead>{isRTL ? "الحالة" : "Status"}</TableHead>
-                  <TableHead className="text-right">{isRTL ? "الإجراءات" : "Actions"}</TableHead>
+                  <TableHead>{isArabic ? "المنتج" : "Product"}</TableHead>
+                  <TableHead>{isArabic ? "التصنيف" : "Category"}</TableHead>
+                  <TableHead>{isArabic ? "السعر" : "Price"}</TableHead>
+                  <TableHead>{isArabic ? "المبيعات" : "Sales"}</TableHead>
+                  <TableHead>{isArabic ? "المشاهدات" : "Views"}</TableHead>
+                  <TableHead>{isArabic ? "التقييم" : "Rating"}</TableHead>
+                  <TableHead>{isArabic ? "الحالة" : "Status"}</TableHead>
+                  <TableHead className="text-right">{isArabic ? "الإجراءات" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -274,47 +212,62 @@ export function SellerProductsDashboard() {
                     <TableCell>
                       <div>
                         <p className="font-medium">
-                          {isRTL ? product.titleAr : product.titleEn}
+                          {isArabic ? product.titleAr : product.titleEn}
                         </p>
-                        <p className="text-xs text-muted-foreground">ID: {product.id}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {product.orders.length} {isArabic ? "طلب" : "orders"}
+                        </p>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {isArabic ? product.category.nameAr : product.category.nameEn}
+                      </span>
+                    </TableCell>
                     <TableCell className="font-medium">
-                      {product.price.toLocaleString()} ر.س
+                      {Number(product.price).toFixed(2)} {t.sar}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{product.sales}</Badge>
-                    </TableCell>
-                    <TableCell className="font-medium text-green-600">
-                      {product.revenue.toLocaleString()} ر.س
+                      <Badge variant="secondary">{product._count.orders}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
                         <Eye className="h-3 w-3 text-muted-foreground" />
-                        {product.views}
+                        {product.viewCount}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <span className="font-medium">{product.rating}</span>
+                        <span className="font-medium">{Number(product.averageRating).toFixed(1)}</span>
                         <span className="text-yellow-500">★</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({product._count.reviews})
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={product.isActive ? "default" : "secondary"}>
-                        {product.isActive ? (isRTL ? "نشط" : "Active") : (isRTL ? "موقوف" : "Inactive")}
+                      <Badge variant={getStatusBadge(product.status)}>
+                        {getStatusLabel(product.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button size="icon" variant="ghost">
+                        <Link href={`/${locale}/products/${product.slug}`}>
+                          <Button size="icon" variant="ghost" title={isArabic ? "عرض" : "View"}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/${locale}/seller/products/${product.id}/edit`}>
+                          <Button size="icon" variant="ghost" title={isArabic ? "تعديل" : "Edit"}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title={isArabic ? "إحصائيات" : "Stats"}
+                        >
                           <BarChart3 className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost">
-                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </TableCell>
@@ -328,53 +281,59 @@ export function SellerProductsDashboard() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="cursor-pointer hover:border-primary transition-colors">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Plus className="h-6 w-6 text-primary" />
+        <Link href={`/${locale}/seller/products/new`}>
+          <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-[#846F9C]/10 rounded-lg">
+                  <Plus className="h-6 w-6 text-[#846F9C]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">{isArabic ? "إضافة منتج جديد" : "Add New Product"}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isArabic ? "ابدأ بيع منتج جديد" : "Start selling a new product"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold">{isRTL ? "إضافة منتج جديد" : "Add New Product"}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isRTL ? "ابدأ بيع منتج جديد" : "Start selling a new product"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="cursor-pointer hover:border-primary transition-colors">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <BarChart3 className="h-6 w-6 text-primary" />
+        <Link href={`/${locale}/dashboard/analytics`}>
+          <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-[#4691A9]/10 rounded-lg">
+                  <BarChart3 className="h-6 w-6 text-[#4691A9]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">{isArabic ? "تحليلات مفصلة" : "Detailed Analytics"}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isArabic ? "شاهد تقارير المبيعات" : "View sales reports"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold">{isRTL ? "تحليلات مفصلة" : "Detailed Analytics"}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isRTL ? "شاهد تقارير المبيعات" : "View sales reports"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="cursor-pointer hover:border-primary transition-colors">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <DollarSign className="h-6 w-6 text-primary" />
+        <Link href={`/${locale}/dashboard/wallet`}>
+          <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-[#89A58F]/10 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-[#89A58F]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">{isArabic ? "سحب الأرباح" : "Withdraw Earnings"}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isArabic ? "اطلب سحب أرباحك" : "Request withdrawal"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold">{isRTL ? "سحب الأرباح" : "Withdraw Earnings"}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isRTL ? "اطلب سحب أرباحك" : "Request withdrawal"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   )

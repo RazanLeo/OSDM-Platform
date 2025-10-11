@@ -187,6 +187,7 @@ export const translations = {
     transactions: "المعاملات",
     paymentMethods: "طرق الدفع",
     escrow: "الضمان",
+    sar: "ريال",
 
     // Orders & Contracts
     orders: "الطلبات",
@@ -426,6 +427,7 @@ export const translations = {
     transactions: "Transactions",
     paymentMethods: "Payment Methods",
     escrow: "Escrow",
+    sar: "SAR",
 
     // Orders & Contracts
     orders: "Orders",

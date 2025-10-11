@@ -26,11 +26,21 @@ export default async function DashboardPage({ params }: { params: { locale: Loca
     include: {
       products: {
         take: 5,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+          orders: {
+            where: { status: 'COMPLETED' }
+          }
+        }
       },
       services: {
         take: 5,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+          orders: {
+            where: { status: 'COMPLETED' }
+          }
+        }
       },
       projectsAsClient: {
         take: 5,
@@ -44,6 +54,13 @@ export default async function DashboardPage({ params }: { params: { locale: Loca
         take: 5,
         orderBy: { createdAt: 'desc' }
       },
+      productOrdersAsSeller: {
+        where: { status: 'COMPLETED' }
+      },
+      serviceOrdersAsSeller: {
+        where: { status: 'COMPLETED' }
+      },
+      reviewsReceived: true,
       wallet: true,
       subscription: true
     }
@@ -53,5 +70,38 @@ export default async function DashboardPage({ params }: { params: { locale: Loca
     redirect(`/${locale}/auth/login`)
   }
 
-  return <UnifiedDashboard user={user} locale={locale} translations={t} />
+  // Calculate statistics
+  const productEarnings = user.productOrdersAsSeller.reduce((sum, order) =>
+    sum + Number(order.sellerEarning), 0
+  )
+  const serviceEarnings = user.serviceOrdersAsSeller.reduce((sum, order) =>
+    sum + Number(order.sellerEarning), 0
+  )
+  const totalEarnings = productEarnings + serviceEarnings
+
+  const totalSales = user.productOrdersAsSeller.length + user.serviceOrdersAsSeller.length
+  const totalPurchases = user.productOrdersAsBuyer.length + user.serviceOrdersAsBuyer.length
+
+  const averageRating = user.reviewsReceived.length > 0
+    ? user.reviewsReceived.reduce((sum, review) => sum + review.rating, 0) / user.reviewsReceived.length
+    : 0
+  const totalReviews = user.reviewsReceived.length
+
+  const balance = user.wallet?.balance ? Number(user.wallet.balance) : 0
+
+  // Prepare user data with computed fields
+  const userData = {
+    ...user,
+    totalEarnings,
+    totalSales,
+    totalPurchases,
+    averageRating,
+    totalReviews,
+    balance,
+    readyProducts: user.products,
+    customServices: user.services,
+    projects: user.projectsAsClient
+  }
+
+  return <UnifiedDashboard user={userData} locale={locale} translations={t} />
 }
