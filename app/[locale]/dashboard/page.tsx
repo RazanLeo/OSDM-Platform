@@ -24,27 +24,28 @@ export default async function DashboardPage({ params }: { params: { locale: Loca
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
-      sellerProfile: true,
-      readyProducts: {
+      products: {
         take: 5,
         orderBy: { createdAt: 'desc' }
       },
-      customServices: {
+      services: {
         take: 5,
         orderBy: { createdAt: 'desc' }
       },
-      projects: {
+      projectsAsClient: {
         take: 5,
         orderBy: { createdAt: 'desc' }
       },
-      purchases: {
+      productOrdersAsBuyer: {
         take: 5,
         orderBy: { createdAt: 'desc' }
       },
-      orders: {
+      serviceOrdersAsBuyer: {
         take: 5,
         orderBy: { createdAt: 'desc' }
-      }
+      },
+      wallet: true,
+      subscription: true
     }
   })
 
