@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
 import { prisma } from "@/lib/prisma"
-import { ProductCard } from "@/components/marketplace/product-card"
+import { ServiceCard } from "@/components/marketplace/service-card"
 import { CategorySidebar } from "@/components/marketplace/category-sidebar"
 import { MarketplaceHeader } from "@/components/marketplace/marketplace-header"
 import { Pagination } from "@/components/marketplace/pagination"
-import { Package, AlertCircle } from "lucide-react"
+import { Briefcase, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const ITEMS_PER_PAGE = 24
@@ -26,14 +26,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const isArabic = locale === "ar"
 
   return {
-    title: isArabic ? "سوق المنتجات الرقمية الجاهزة - OSDM" : "Ready-Made Digital Products Market - OSDM",
+    title: isArabic ? "سوق الخدمات المخصصة - OSDM" : "Custom Services Market - OSDM",
     description: isArabic
-      ? "اكتشف آلاف المنتجات الرقمية الجاهزة للتحميل الفوري - كتب، قوالب، دورات، وأكثر"
-      : "Discover thousands of digital products ready for instant download - books, templates, courses, and more",
+      ? "احصل على خدمات احترافية مخصصة من خبراء في مختلف المجالات"
+      : "Get professional custom services from experts in various fields",
   }
 }
 
-export default async function ReadyProductsPage({ params, searchParams }: PageProps) {
+export default async function ServicesPage({ params, searchParams }: PageProps) {
   const { locale } = params
   const isArabic = locale === "ar"
 
@@ -45,7 +45,7 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
 
   // Build where clause
   const where: any = {
-    status: "APPROVED",
+    status: "ACTIVE",
   }
 
   if (categoryId) {
@@ -66,13 +66,7 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
 
   switch (sortBy) {
     case "popular":
-      orderBy = { downloadCount: "desc" }
-      break
-    case "price-low":
-      orderBy = { price: "asc" }
-      break
-    case "price-high":
-      orderBy = { price: "desc" }
+      orderBy = { orderCount: "desc" }
       break
     case "newest":
     default:
@@ -80,9 +74,9 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
       break
   }
 
-  // Fetch products and total count in parallel
-  const [products, totalCount, categories] = await Promise.all([
-    prisma.product.findMany({
+  // Fetch services and total count in parallel
+  const [services, totalCount, categories] = await Promise.all([
+    prisma.service.findMany({
       where,
       include: {
         User: {
@@ -91,10 +85,19 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
             avatar: true,
           },
         },
-        ProductCategory: {
+        ServiceCategory: {
           select: {
             nameAr: true,
             nameEn: true,
+          },
+        },
+        ServicePackage: {
+          select: {
+            type: true,
+            price: true,
+          },
+          orderBy: {
+            price: "asc",
           },
         },
       },
@@ -102,8 +105,8 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
       take: ITEMS_PER_PAGE,
       skip: (page - 1) * ITEMS_PER_PAGE,
     }),
-    prisma.product.count({ where }),
-    prisma.productCategory.findMany({
+    prisma.service.count({ where }),
+    prisma.serviceCategory.findMany({
       where: {
         isActive: true,
       },
@@ -118,7 +121,7 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
         parentId: true,
         _count: {
           select: {
-            Product: true,
+            Service: true,
           },
         },
       },
@@ -127,18 +130,23 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
+  const sortOptions = [
+    { value: "newest", labelAr: "الأحدث", labelEn: "Newest" },
+    { value: "popular", labelAr: "الأكثر طلباً", labelEn: "Most Popular" },
+  ]
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
-          <Package className="h-8 w-8 md:h-10 md:w-10" style={{ color: "#846F9C" }} />
-          {isArabic ? "سوق المنتجات الرقمية الجاهزة" : "Ready-Made Digital Products Market"}
+          <Briefcase className="h-8 w-8 md:h-10 md:w-10" style={{ color: "#4691A9" }} />
+          {isArabic ? "سوق الخدمات المخصصة" : "Custom Services Market"}
         </h1>
         <p className="text-muted-foreground mt-2 text-sm md:text-base">
           {isArabic
-            ? "اكتشف آلاف المنتجات الرقمية الجاهزة للتحميل الفوري"
-            : "Discover thousands of digital products ready for instant download"}
+            ? "احصل على خدمات احترافية مخصصة من خبراء في مختلف المجالات"
+            : "Get professional custom services from experts in various fields"}
         </p>
       </div>
 
@@ -146,7 +154,8 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
       <MarketplaceHeader
         locale={locale}
         isArabic={isArabic}
-        basePath="/marketplace/ready-products"
+        basePath="/marketplace/services"
+        sortOptions={sortOptions}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -156,25 +165,25 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
             categories={categories.map(cat => ({
               ...cat,
               _count: {
-                products: cat._count.Product,
+                services: cat._count.Service,
               },
             }))}
             selectedCategoryId={categoryId}
             locale={locale}
             isArabic={isArabic}
-            basePath="/marketplace/ready-products"
-            countKey="products"
+            basePath="/marketplace/services"
+            countKey="services"
           />
         </div>
 
-        {/* Products Grid */}
+        {/* Services Grid */}
         <div className="lg:col-span-3">
           {/* Results Count */}
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               {isArabic
-                ? `عرض ${products.length} من ${totalCount} منتج`
-                : `Showing ${products.length} of ${totalCount} products`}
+                ? `عرض ${services.length} من ${totalCount} خدمة`
+                : `Showing ${services.length} of ${totalCount} services`}
             </p>
             {searchQuery && (
               <p className="text-sm text-muted-foreground">
@@ -183,25 +192,28 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
             )}
           </div>
 
-          {/* Products Grid */}
-          {products.length > 0 ? (
+          {/* Services Grid */}
+          {services.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={{
-                      slug: product.slug,
-                      titleAr: product.titleAr,
-                      titleEn: product.titleEn,
-                      thumbnail: product.thumbnail,
-                      price: Number(product.price),
-                      averageRating: Number(product.averageRating),
-                      downloadCount: product.downloadCount,
+                {services.map((service) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={{
+                      slug: service.slug,
+                      titleAr: service.titleAr,
+                      titleEn: service.titleEn,
+                      thumbnail: service.thumbnail,
+                      averageRating: Number(service.averageRating),
+                      orderCount: service.orderCount,
                       seller: {
-                        username: product.User.username,
-                        avatar: product.User.avatar,
+                        username: service.User.username,
+                        avatar: service.User.avatar,
                       },
+                      packages: service.ServicePackage.map(pkg => ({
+                        type: pkg.type,
+                        price: Number(pkg.price),
+                      })),
                     }}
                     locale={locale}
                     isArabic={isArabic}
@@ -215,7 +227,7 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
                 totalPages={totalPages}
                 locale={locale}
                 isArabic={isArabic}
-                basePath="/marketplace/ready-products"
+                basePath="/marketplace/services"
               />
             </>
           ) : (
@@ -224,8 +236,8 @@ export default async function ReadyProductsPage({ params, searchParams }: PagePr
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 {isArabic
-                  ? "لم يتم العثور على منتجات. جرب البحث بكلمات مختلفة أو اختر تصنيف آخر."
-                  : "No products found. Try searching with different keywords or select another category."}
+                  ? "لم يتم العثور على خدمات. جرب البحث بكلمات مختلفة أو اختر تصنيف آخر."
+                  : "No services found. Try searching with different keywords or select another category."}
               </AlertDescription>
             </Alert>
           )}

@@ -1,9 +1,3 @@
-// ============================================
-// OSDM Platform - Complete Database Schema
-// Based on Phase 0 ERD - 28 Tables + 19 Enums
-// Combining: Gumroad, Picalica, Fiverr, Khamsat, Upwork, Mostaql, Bahr
-// ============================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,72 +7,712 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// ENUMS - 19 Enums
-// ============================================
+model AuditLog {
+  id        String   @id
+  userId    String?
+  userRole  String?
+  action    String
+  entity    String
+  entityId  String?
+  changes   String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
-enum UserRole {
-  USER   // مستخدم عادي (بائع + مشتري)
-  ADMIN  // مدير المنصة
+  @@index([action])
+  @@index([createdAt])
+  @@index([entity])
+  @@index([userId])
 }
 
-enum UserType {
-  INDIVIDUAL  // فرد
-  COMPANY     // شركة
+model Contract {
+  id                               String        @id
+  contractNumber                   String        @unique
+  projectId                        String        @unique
+  clientId                         String
+  freelancerId                     String
+  proposalId                       String        @unique
+  totalAmount                      Decimal       @db.Decimal(10, 2)
+  platformFee                      Decimal       @db.Decimal(10, 2)
+  paymentFee                       Decimal       @db.Decimal(10, 2)
+  freelancerEarning                Decimal       @db.Decimal(10, 2)
+  startDate                        DateTime      @default(now())
+  deadline                         DateTime?
+  status                           ProjectStatus @default(IN_PROGRESS)
+  deliveryFiles                    String[]
+  deliveryNote                     String?
+  completedAt                      DateTime?
+  createdAt                        DateTime      @default(now())
+  updatedAt                        DateTime
+  User_Contract_clientIdToUser     User          @relation("Contract_clientIdToUser", fields: [clientId], references: [id])
+  User_Contract_freelancerIdToUser User          @relation("Contract_freelancerIdToUser", fields: [freelancerId], references: [id])
+  Project                          Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  Proposal                         Proposal      @relation(fields: [proposalId], references: [id])
+  Escrow                           Escrow?
+  Milestone                        Milestone[]
+  Payment                          Payment?
+
+  @@index([clientId])
+  @@index([freelancerId])
+  @@index([projectId])
+  @@index([proposalId])
+  @@index([status])
 }
 
-enum SubscriptionTier {
-  INDIVIDUAL  // 100 SAR/month
-  SME         // 250 SAR/month
-  LARGE       // 500 SAR/month
+model Dispute {
+  id                               String        @id
+  disputeNumber                    String        @unique
+  complainantId                    String
+  respondentId                     String
+  marketType                       MarketType
+  orderId                          String
+  reason                           DisputeReason
+  description                      String
+  attachments                      String[]
+  status                           DisputeStatus @default(OPEN)
+  resolution                       String?
+  resolvedBy                       String?
+  resolvedAt                       DateTime?
+  refundAmount                     Decimal?      @db.Decimal(10, 2)
+  createdAt                        DateTime      @default(now())
+  updatedAt                        DateTime
+  User_Dispute_complainantIdToUser User          @relation("Dispute_complainantIdToUser", fields: [complainantId], references: [id])
+  User_Dispute_respondentIdToUser  User          @relation("Dispute_respondentIdToUser", fields: [respondentId], references: [id])
+
+  @@index([complainantId])
+  @@index([disputeNumber])
+  @@index([respondentId])
+  @@index([status])
 }
 
-enum SubscriptionStatus {
-  ACTIVE
-  EXPIRED
-  CANCELLED
-  PENDING_PAYMENT
+model Escrow {
+  id             String        @id
+  amount         Decimal       @db.Decimal(10, 2)
+  buyerId        String
+  sellerId       String
+  status         EscrowStatus  @default(PENDING)
+  marketType     MarketType
+  productOrderId String?       @unique
+  serviceOrderId String?       @unique
+  contractId     String?       @unique
+  releasedAt     DateTime?
+  refundedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime
+  Contract       Contract?     @relation(fields: [contractId], references: [id])
+  ProductOrder   ProductOrder? @relation(fields: [productOrderId], references: [id])
+  ServiceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
 }
 
-enum ProductStatus {
-  DRAFT        // مسودة
-  PENDING      // في انتظار المراجعة
-  APPROVED     // معتمد ومنشور
-  REJECTED     // مرفوض
-  SUSPENDED    // موقوف
+model Message {
+  id                             String      @id
+  senderId                       String
+  recipientId                    String
+  content                        String
+  attachments                    String[]
+  orderId                        String?
+  marketType                     MarketType?
+  isRead                         Boolean     @default(false)
+  readAt                         DateTime?
+  createdAt                      DateTime    @default(now())
+  User_Message_recipientIdToUser User        @relation("Message_recipientIdToUser", fields: [recipientId], references: [id], onDelete: Cascade)
+  User_Message_senderIdToUser    User        @relation("Message_senderIdToUser", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([recipientId])
+  @@index([senderId])
 }
 
-enum ServiceStatus {
-  ACTIVE       // نشط
-  PAUSED       // متوقف مؤقتاً
-  PENDING      // في انتظار المراجعة
-  REJECTED     // مرفوض
-  SUSPENDED    // موقوف
+model Milestone {
+  id            String      @id
+  contractId    String
+  title         String
+  description   String?
+  amount        Decimal     @db.Decimal(10, 2)
+  deadline      DateTime?
+  status        OrderStatus @default(PENDING)
+  deliveryFiles String[]
+  deliveryNote  String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime
+  deliveredAt   DateTime?
+  acceptedAt    DateTime?
+  Contract      Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
 }
 
-enum ProjectStatus {
-  OPEN         // مفتوح للعروض
-  IN_PROGRESS  // جاري العمل
-  COMPLETED    // مكتمل
-  CANCELLED    // ملغى
-  DISPUTED     // تحت النزاع
+model Notification {
+  id        String           @id
+  userId    String
+  type      NotificationType
+  titleAr   String
+  titleEn   String
+  messageAr String
+  messageEn String
+  link      String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([isRead])
+  @@index([userId])
+}
+
+model OAuthAccount {
+  id           String    @id
+  userId       String
+  provider     String
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  User         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+model Payment {
+  id                   String        @id
+  paymentNumber        String        @unique
+  payerId              String
+  amount               Decimal       @db.Decimal(10, 2)
+  currency             String        @default("SAR")
+  method               PaymentMethod
+  status               PaymentStatus @default(PENDING)
+  gatewayTransactionId String?
+  gatewayResponse      String?
+  marketType           MarketType
+  productOrderId       String?       @unique
+  serviceOrderId       String?       @unique
+  contractId           String?       @unique
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime
+  completedAt          DateTime?
+  Contract             Contract?     @relation(fields: [contractId], references: [id])
+  ProductOrder         ProductOrder? @relation(fields: [productOrderId], references: [id])
+  ServiceOrder         ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
+
+  @@index([payerId])
+  @@index([paymentNumber])
+  @@index([status])
+}
+
+model Product {
+  id              String          @id
+  sellerId        String
+  titleAr         String
+  titleEn         String
+  descriptionAr   String
+  descriptionEn   String
+  slug            String          @unique
+  categoryId      String
+  price           Decimal         @db.Decimal(10, 2)
+  originalPrice   Decimal?        @db.Decimal(10, 2)
+  thumbnail       String
+  images          String[]
+  demoUrl         String?
+  tags            String[]
+  downloadCount   Int             @default(0)
+  viewCount       Int             @default(0)
+  status          ProductStatus   @default(DRAFT)
+  rejectionReason String?
+  averageRating   Decimal         @default(0) @db.Decimal(3, 2)
+  reviewCount     Int             @default(0)
+  metaTitleAr     String?
+  metaTitleEn     String?
+  metaDescAr      String?
+  metaDescEn      String?
+  aiGenerated     Boolean         @default(false)
+  aiTags          String[]
+  aiCategory      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  publishedAt     DateTime?
+  ProductCategory ProductCategory @relation(fields: [categoryId], references: [id])
+  User            User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  ProductFile     ProductFile[]
+  ProductOrder    ProductOrder[]
+  ProductReview   ProductReview[]
+
+  @@index([categoryId])
+  @@index([sellerId])
+  @@index([slug])
+  @@index([status])
+}
+
+model ProductCategory {
+  id                    String            @id
+  nameAr                String
+  nameEn                String
+  slug                  String            @unique
+  icon                  String?
+  parentId              String?
+  order                 Int               @default(0)
+  isActive              Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  Product               Product[]
+  ProductCategory       ProductCategory?  @relation("ProductCategoryToProductCategory", fields: [parentId], references: [id], onDelete: Cascade)
+  other_ProductCategory ProductCategory[] @relation("ProductCategoryToProductCategory")
+
+  @@index([parentId])
+  @@index([slug])
+}
+
+model ProductFile {
+  id        String   @id
+  productId String
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  fileType  String
+  createdAt DateTime @default(now())
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductOrder {
+  id                               String      @id
+  orderNumber                      String      @unique
+  buyerId                          String
+  sellerId                         String
+  productId                        String
+  productPrice                     Decimal     @db.Decimal(10, 2)
+  platformFee                      Decimal     @db.Decimal(10, 2)
+  paymentFee                       Decimal     @db.Decimal(10, 2)
+  totalAmount                      Decimal     @db.Decimal(10, 2)
+  sellerEarning                    Decimal     @db.Decimal(10, 2)
+  status                           OrderStatus @default(PENDING)
+  downloadUrl                      String?
+  downloadCount                    Int         @default(0)
+  downloadExpiresAt                DateTime?
+  createdAt                        DateTime    @default(now())
+  updatedAt                        DateTime
+  completedAt                      DateTime?
+  Escrow                           Escrow?
+  Payment                          Payment?
+  User_ProductOrder_buyerIdToUser  User        @relation("ProductOrder_buyerIdToUser", fields: [buyerId], references: [id])
+  Product                          Product     @relation(fields: [productId], references: [id])
+  User_ProductOrder_sellerIdToUser User        @relation("ProductOrder_sellerIdToUser", fields: [sellerId], references: [id])
+
+  @@index([buyerId])
+  @@index([orderNumber])
+  @@index([productId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+model ProductReview {
+  id                                  String    @id
+  productId                           String
+  reviewerId                          String
+  sellerId                            String
+  orderId                             String    @unique
+  rating                              Int
+  comment                             String?
+  sellerResponse                      String?
+  respondedAt                         DateTime?
+  createdAt                           DateTime  @default(now())
+  updatedAt                           DateTime
+  Product                             Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User_ProductReview_reviewerIdToUser User      @relation("ProductReview_reviewerIdToUser", fields: [reviewerId], references: [id], onDelete: Cascade)
+  User_ProductReview_sellerIdToUser   User      @relation("ProductReview_sellerIdToUser", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([reviewerId])
+  @@index([sellerId])
+}
+
+model Project {
+  id              String          @id
+  clientId        String
+  titleAr         String
+  titleEn         String
+  descriptionAr   String
+  descriptionEn   String
+  slug            String          @unique
+  categoryId      String
+  budgetMin       Decimal?        @db.Decimal(10, 2)
+  budgetMax       Decimal?        @db.Decimal(10, 2)
+  budgetType      String
+  duration        Int?
+  deadline        DateTime?
+  skills          String[]
+  attachments     String[]
+  status          ProjectStatus   @default(OPEN)
+  proposalCount   Int             @default(0)
+  viewCount       Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  publishedAt     DateTime?
+  closedAt        DateTime?
+  Contract        Contract?
+  ProjectCategory ProjectCategory @relation(fields: [categoryId], references: [id])
+  User            User            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  Proposal        Proposal[]
+
+  @@index([categoryId])
+  @@index([clientId])
+  @@index([slug])
+  @@index([status])
+}
+
+model ProjectCategory {
+  id                    String            @id
+  nameAr                String
+  nameEn                String
+  slug                  String            @unique
+  icon                  String?
+  parentId              String?
+  order                 Int               @default(0)
+  isActive              Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  Project               Project[]
+  ProjectCategory       ProjectCategory?  @relation("ProjectCategoryToProjectCategory", fields: [parentId], references: [id], onDelete: Cascade)
+  other_ProjectCategory ProjectCategory[] @relation("ProjectCategoryToProjectCategory")
+
+  @@index([parentId])
+  @@index([slug])
+}
+
+model Proposal {
+  id             String    @id
+  projectId      String
+  freelancerId   String
+  coverLetter    String
+  proposedAmount Decimal   @db.Decimal(10, 2)
+  deliveryDays   Int
+  attachments    String[]
+  milestonesJson String?
+  status         String    @default("PENDING")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  Contract       Contract?
+  User           User      @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  Project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([freelancerId])
+  @@index([projectId])
+}
+
+model RevenueSettings {
+  id                 String   @id
+  platformCommission Decimal  @default(25.00) @db.Decimal(5, 2)
+  paymentGatewayFee  Decimal  @default(5.00) @db.Decimal(5, 2)
+  individualPrice    Decimal  @default(100.00) @db.Decimal(10, 2)
+  smePrice           Decimal  @default(250.00) @db.Decimal(10, 2)
+  largePrice         Decimal  @default(500.00) @db.Decimal(10, 2)
+  disputeWindowDays  Int      @default(7)
+  updatedAt          DateTime
+  updatedBy          String?
+}
+
+model Service {
+  id              String           @id
+  sellerId        String
+  titleAr         String
+  titleEn         String
+  descriptionAr   String
+  descriptionEn   String
+  slug            String           @unique
+  categoryId      String
+  thumbnail       String
+  images          String[]
+  videoUrl        String?
+  tags            String[]
+  viewCount       Int              @default(0)
+  orderCount      Int              @default(0)
+  status          ServiceStatus    @default(PENDING)
+  rejectionReason String?
+  averageRating   Decimal          @default(0) @db.Decimal(3, 2)
+  reviewCount     Int              @default(0)
+  metaTitleAr     String?
+  metaTitleEn     String?
+  metaDescAr      String?
+  metaDescEn      String?
+  aiGenerated     Boolean          @default(false)
+  aiTags          String[]
+  aiCategory      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime
+  publishedAt     DateTime?
+  ServiceCategory ServiceCategory  @relation(fields: [categoryId], references: [id])
+  User            User             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  ServiceOrder    ServiceOrder[]
+  ServicePackage  ServicePackage[]
+
+  @@index([categoryId])
+  @@index([sellerId])
+  @@index([slug])
+  @@index([status])
+}
+
+model ServiceCategory {
+  id                    String            @id
+  nameAr                String
+  nameEn                String
+  slug                  String            @unique
+  icon                  String?
+  parentId              String?
+  order                 Int               @default(0)
+  isActive              Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  Service               Service[]
+  ServiceCategory       ServiceCategory?  @relation("ServiceCategoryToServiceCategory", fields: [parentId], references: [id], onDelete: Cascade)
+  other_ServiceCategory ServiceCategory[] @relation("ServiceCategoryToServiceCategory")
+
+  @@index([parentId])
+  @@index([slug])
+}
+
+model ServiceMilestone {
+  id            String       @id
+  orderId       String
+  title         String
+  description   String?
+  amount        Decimal      @db.Decimal(10, 2)
+  status        OrderStatus  @default(PENDING)
+  deliveryFiles String[]
+  deliveryNote  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime
+  deliveredAt   DateTime?
+  acceptedAt    DateTime?
+  ServiceOrder  ServiceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model ServiceOrder {
+  id                               String             @id
+  orderNumber                      String             @unique
+  buyerId                          String
+  sellerId                         String
+  serviceId                        String
+  packageType                      String
+  packagePrice                     Decimal            @db.Decimal(10, 2)
+  deliveryDays                     Int
+  revisions                        Int
+  requirements                     String
+  attachments                      String[]
+  platformFee                      Decimal            @db.Decimal(10, 2)
+  paymentFee                       Decimal            @db.Decimal(10, 2)
+  totalAmount                      Decimal            @db.Decimal(10, 2)
+  sellerEarning                    Decimal            @db.Decimal(10, 2)
+  status                           OrderStatus        @default(PENDING)
+  deliveredAt                      DateTime?
+  deliveryFiles                    String[]
+  deliveryNote                     String?
+  createdAt                        DateTime           @default(now())
+  updatedAt                        DateTime
+  completedAt                      DateTime?
+  deadline                         DateTime?
+  Escrow                           Escrow?
+  Payment                          Payment?
+  ServiceMilestone                 ServiceMilestone[]
+  User_ServiceOrder_buyerIdToUser  User               @relation("ServiceOrder_buyerIdToUser", fields: [buyerId], references: [id])
+  User_ServiceOrder_sellerIdToUser User               @relation("ServiceOrder_sellerIdToUser", fields: [sellerId], references: [id])
+  Service                          Service            @relation(fields: [serviceId], references: [id])
+
+  @@index([buyerId])
+  @@index([orderNumber])
+  @@index([sellerId])
+  @@index([serviceId])
+  @@index([status])
+}
+
+model ServicePackage {
+  id            String   @id
+  serviceId     String
+  type          String
+  nameAr        String
+  nameEn        String
+  descriptionAr String
+  descriptionEn String
+  price         Decimal  @db.Decimal(10, 2)
+  deliveryDays  Int
+  revisions     Int
+  features      String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  Service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Subscription {
+  id                 String             @id
+  userId             String             @unique
+  tier               SubscriptionTier
+  status             SubscriptionStatus @default(PENDING_PAYMENT)
+  monthlyPrice       Decimal            @db.Decimal(10, 2)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  lastPaymentId      String?
+  lastPaymentDate    DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime
+  User               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+}
+
+model User {
+  id                                           String          @id
+  username                                     String          @unique
+  email                                        String          @unique
+  password                                     String?
+  fullName                                     String
+  phone                                        String?
+  country                                      String
+  role                                         UserRole        @default(USER)
+  userType                                     UserType        @default(INDIVIDUAL)
+  avatar                                       String?
+  bio                                          String?
+  skills                                       String[]
+  languages                                    String[]
+  emailVerified                                Boolean         @default(false)
+  phoneVerified                                Boolean         @default(false)
+  createdAt                                    DateTime        @default(now())
+  updatedAt                                    DateTime
+  lastLoginAt                                  DateTime?
+  Contract_Contract_clientIdToUser             Contract[]      @relation("Contract_clientIdToUser")
+  Contract_Contract_freelancerIdToUser         Contract[]      @relation("Contract_freelancerIdToUser")
+  Dispute_Dispute_complainantIdToUser          Dispute[]       @relation("Dispute_complainantIdToUser")
+  Dispute_Dispute_respondentIdToUser           Dispute[]       @relation("Dispute_respondentIdToUser")
+  Message_Message_recipientIdToUser            Message[]       @relation("Message_recipientIdToUser")
+  Message_Message_senderIdToUser               Message[]       @relation("Message_senderIdToUser")
+  Notification                                 Notification[]
+  OAuthAccount                                 OAuthAccount[]
+  Product                                      Product[]
+  ProductOrder_ProductOrder_buyerIdToUser      ProductOrder[]  @relation("ProductOrder_buyerIdToUser")
+  ProductOrder_ProductOrder_sellerIdToUser     ProductOrder[]  @relation("ProductOrder_sellerIdToUser")
+  ProductReview_ProductReview_reviewerIdToUser ProductReview[] @relation("ProductReview_reviewerIdToUser")
+  ProductReview_ProductReview_sellerIdToUser   ProductReview[] @relation("ProductReview_sellerIdToUser")
+  Project                                      Project[]
+  Proposal                                     Proposal[]
+  Service                                      Service[]
+  ServiceOrder_ServiceOrder_buyerIdToUser      ServiceOrder[]  @relation("ServiceOrder_buyerIdToUser")
+  ServiceOrder_ServiceOrder_sellerIdToUser     ServiceOrder[]  @relation("ServiceOrder_sellerIdToUser")
+  Session                                      Session[]
+  Subscription                                 Subscription?
+  Wallet                                       Wallet?
+  Withdrawal                                   Withdrawal[]
+
+  @@index([email])
+  @@index([role])
+  @@index([username])
+}
+
+model Wallet {
+  id             String       @id
+  userId         String       @unique
+  balance        Decimal      @default(0) @db.Decimal(10, 2)
+  pendingBalance Decimal      @default(0) @db.Decimal(10, 2)
+  currency       String       @default("SAR")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  User           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Withdrawal     Withdrawal[]
+
+  @@index([userId])
+}
+
+model Withdrawal {
+  id          String           @id
+  userId      String
+  walletId    String
+  amount      Decimal          @db.Decimal(10, 2)
+  currency    String           @default("SAR")
+  bankDetails String
+  status      WithdrawalStatus @default(PENDING)
+  reviewedBy  String?
+  reviewNote  String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime
+  completedAt DateTime?
+  User        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Wallet      Wallet           @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@index([walletId])
+}
+
+enum DisputeReason {
+  NOT_DELIVERED
+  INCOMPLETE_WORK
+  POOR_QUALITY
+  NOT_AS_DESCRIBED
+  BUYER_UNAVAILABLE
+  PAYMENT_ISSUE
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  ESCALATED
+  CLOSED
+}
+
+enum EscrowStatus {
+  PENDING
+  HELD
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+enum MarketType {
+  PRODUCTS
+  SERVICES
+  PROJECTS
+}
+
+enum NotificationType {
+  ORDER
+  PAYMENT
+  MESSAGE
+  REVIEW
+  DISPUTE
+  SYSTEM
+  MARKETING
 }
 
 enum OrderStatus {
-  PENDING       // في انتظار الدفع
-  PAID          // مدفوع
-  IN_PROGRESS   // جاري التنفيذ
-  DELIVERED     // تم التسليم
-  COMPLETED     // مكتمل
-  CANCELLED     // ملغى
-  REFUNDED      // مسترد
-}
-
-enum PaymentStatus {
-  PENDING       // في انتظار المعالجة
-  COMPLETED     // مكتمل
-  FAILED        // فشل
-  REFUNDED      // مسترد
+  PENDING
+  PAID
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
 }
 
 enum PaymentMethod {
@@ -93,1055 +727,63 @@ enum PaymentMethod {
   GOOGLE_PAY
 }
 
-enum EscrowStatus {
-  PENDING       // في انتظار التسليم
-  HELD          // محتجز
-  RELEASED      // محرر للبائع
-  REFUNDED      // مسترد للمشتري
-  DISPUTED      // تحت النزاع
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }
 
-enum DisputeStatus {
-  OPEN          // مفتوح
-  UNDER_REVIEW  // قيد المراجعة
-  RESOLVED      // محلول
-  ESCALATED     // تصعيد للإدارة
-  CLOSED        // مغلق
+enum ProductStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
-enum DisputeReason {
-  NOT_DELIVERED          // لم يتم التسليم
-  INCOMPLETE_WORK        // عمل غير مكتمل
-  POOR_QUALITY           // جودة رديئة
-  NOT_AS_DESCRIBED       // غير مطابق للوصف
-  BUYER_UNAVAILABLE      // المشتري غير متاح
-  PAYMENT_ISSUE          // مشكلة في الدفع
-  OTHER                  // أخرى
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum ServiceStatus {
+  ACTIVE
+  PAUSED
+  PENDING
+  REJECTED
+  SUSPENDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING_PAYMENT
+}
+
+enum SubscriptionTier {
+  INDIVIDUAL
+  SME
+  LARGE
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserType {
+  INDIVIDUAL
+  COMPANY
 }
 
 enum WithdrawalStatus {
-  PENDING       // في انتظار المعالجة
-  APPROVED      // معتمد
-  COMPLETED     // مكتمل
-  REJECTED      // مرفوض
-}
-
-enum NotificationType {
-  ORDER           // طلب جديد
-  PAYMENT         // دفع
-  MESSAGE         // رسالة
-  REVIEW          // تقييم
-  DISPUTE         // نزاع
-  SYSTEM          // إشعار النظام
-  MARKETING       // تسويق
-}
-
-enum MarketType {
-  PRODUCTS    // السوق الأول: المنتجات الجاهزة
-  SERVICES    // السوق الثاني: الخدمات المخصصة
-  PROJECTS    // السوق الثالث: العمل الحر
-}
-
-// ============================================
-// USERS & AUTHENTICATION (3 tables)
-// ============================================
-
-model User {
-  id            String    @id @default(cuid())
-  username      String    @unique
-  email         String    @unique
-  password      String?   // nullable for OAuth users
-  fullName      String
-  phone         String?
-  country       String
-  role          UserRole  @default(USER)
-  userType      UserType  @default(INDIVIDUAL)
-
-  // Profile
-  avatar        String?
-  bio           String?   @db.Text
-  skills        String[]  // للمستقلين
-  languages     String[]  // اللغات التي يتحدثها
-
-  // Verification
-  emailVerified Boolean   @default(false)
-  phoneVerified Boolean   @default(false)
-
-  // OAuth
-  oauthAccounts OAuthAccount[]
-
-  // Subscription
-  subscription  Subscription?
-
-  // Wallet
-  wallet        Wallet?
-
-  // كبائع - السوق الأول: المنتجات الجاهزة
-  products      Product[]
-
-  // كبائع - السوق الثاني: الخدمات المخصصة
-  services      Service[]
-
-  // كمشتري - طلبات المنتجات
-  productOrdersAsBuyer  ProductOrder[] @relation("BuyerProductOrders")
-
-  // كبائع - طلبات المنتجات
-  productOrdersAsSeller ProductOrder[] @relation("SellerProductOrders")
-
-  // كمشتري - طلبات الخدمات
-  serviceOrdersAsBuyer  ServiceOrder[] @relation("BuyerServiceOrders")
-
-  // كبائع - طلبات الخدمات
-  serviceOrdersAsSeller ServiceOrder[] @relation("SellerServiceOrders")
-
-  // كصاحب المشروع (Client)
-  projectsAsClient      Project[]      @relation("ClientProjects")
-
-  // كمستقل (Freelancer)
-  proposals             Proposal[]
-  contractsAsFreelancer Contract[]     @relation("FreelancerContracts")
-
-  // كصاحب المشروع
-  contractsAsClient     Contract[]     @relation("ClientContracts")
-
-  // Reviews
-  reviewsGiven          ProductReview[] @relation("ReviewerReviews")
-  reviewsReceived       ProductReview[] @relation("SellerReviews")
-
-  // Messages
-  messagesSent          Message[]       @relation("SenderMessages")
-  messagesReceived      Message[]       @relation("RecipientMessages")
-
-  // Disputes
-  disputesAsComplainant Dispute[]       @relation("ComplainantDisputes")
-  disputesAsRespondent  Dispute[]       @relation("RespondentDisputes")
-
-  // Notifications
-  notifications         Notification[]
-
-  // Withdrawals
-  withdrawals           Withdrawal[]
-
-  // Sessions
-  sessions              Session[]
-
-  // Timestamps
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLoginAt   DateTime?
-
-  @@index([email])
-  @@index([username])
-  @@index([role])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token        String   @unique
-  expiresAt    DateTime
-  ipAddress    String?
-  userAgent    String?
-  createdAt    DateTime @default(now())
-
-  @@index([userId])
-  @@index([token])
-}
-
-model OAuthAccount {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider     String   // google, apple, github
-  providerId   String   // ID from provider
-  accessToken  String?  @db.Text
-  refreshToken String?  @db.Text
-  expiresAt    DateTime?
-  createdAt    DateTime @default(now())
-
-  @@unique([provider, providerId])
-  @@index([userId])
-}
-
-// ============================================
-// SUBSCRIPTIONS & REVENUE (2 tables)
-// ============================================
-
-model Subscription {
-  id              String              @id @default(cuid())
-  userId          String              @unique
-  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tier            SubscriptionTier
-  status          SubscriptionStatus  @default(PENDING_PAYMENT)
-
-  // Pricing
-  monthlyPrice    Decimal             @db.Decimal(10, 2) // 100, 250, or 500 SAR
-
-  // Billing
-  currentPeriodStart DateTime
-  currentPeriodEnd   DateTime
-  cancelAtPeriodEnd  Boolean          @default(false)
-
-  // Payment
-  lastPaymentId   String?
-  lastPaymentDate DateTime?
-
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-
-  @@index([userId])
-  @@index([status])
-}
-
-model RevenueSettings {
-  id                    String   @id @default(cuid())
-
-  // Platform Commission (نسبة عمولة المنصة)
-  platformCommission    Decimal  @default(25.00) @db.Decimal(5, 2) // 25%
-
-  // Payment Gateway Fee (رسوم بوابة الدفع)
-  paymentGatewayFee     Decimal  @default(5.00)  @db.Decimal(5, 2) // 5%
-
-  // Monthly Subscription Prices
-  individualPrice       Decimal  @default(100.00) @db.Decimal(10, 2) // 100 SAR
-  smePrice              Decimal  @default(250.00) @db.Decimal(10, 2) // 250 SAR
-  largePrice            Decimal  @default(500.00) @db.Decimal(10, 2) // 500 SAR
-
-  // Dispute Window
-  disputeWindowDays     Int      @default(7) // 7 days
-
-  // Updated by admin only
-  updatedAt             DateTime @updatedAt
-  updatedBy             String?  // Admin user ID
-}
-
-// ============================================
-// MARKET 1: READY-MADE PRODUCTS (5 tables)
-// ============================================
-
-model ProductCategory {
-  id          String    @id @default(cuid())
-  nameAr      String
-  nameEn      String
-  slug        String    @unique
-  icon        String?   // Icon name/path
-  parentId    String?   // للتصنيفات الفرعية
-  parent      ProductCategory? @relation("ProductCategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    ProductCategory[] @relation("ProductCategoryHierarchy")
-  products    Product[]
-  order       Int       @default(0) // للترتيب
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-
-  @@index([slug])
-  @@index([parentId])
-}
-
-model Product {
-  id              String          @id @default(cuid())
-  sellerId        String
-  seller          User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-
-  // Basic Info
-  titleAr         String
-  titleEn         String
-  descriptionAr   String          @db.Text
-  descriptionEn   String          @db.Text
-  slug            String          @unique
-
-  // Category
-  categoryId      String
-  category        ProductCategory @relation(fields: [categoryId], references: [id])
-
-  // Pricing
-  price           Decimal         @db.Decimal(10, 2)
-  originalPrice   Decimal?        @db.Decimal(10, 2) // للتخفيضات
-
-  // Media
-  thumbnail       String
-  images          String[]        // صور إضافية
-  demoUrl         String?         // رابط تجريبي/معاينة
-
-  // Files
-  files           ProductFile[]
-
-  // Metadata
-  tags            String[]
-  downloadCount   Int             @default(0)
-  viewCount       Int             @default(0)
-
-  // Status
-  status          ProductStatus   @default(DRAFT)
-  rejectionReason String?         @db.Text
-
-  // Reviews
-  reviews         ProductReview[]
-  averageRating   Decimal         @default(0) @db.Decimal(3, 2)
-  reviewCount     Int             @default(0)
-
-  // Orders
-  orders          ProductOrder[]
-
-  // SEO
-  metaTitleAr     String?
-  metaTitleEn     String?
-  metaDescAr      String?         @db.Text
-  metaDescEn      String?         @db.Text
-
-  // AI Generated
-  aiGenerated     Boolean         @default(false)
-  aiTags          String[]
-  aiCategory      String?
-
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  publishedAt     DateTime?
-
-  @@index([sellerId])
-  @@index([categoryId])
-  @@index([status])
-  @@index([slug])
-}
-
-model ProductFile {
-  id          String   @id @default(cuid())
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  fileName    String
-  fileUrl     String   // S3/MinIO URL
-  fileSize    Int      // بالبايتات
-  fileType    String   // mime type
-
-  createdAt   DateTime @default(now())
-
-  @@index([productId])
-}
-
-model ProductReview {
-  id          String   @id @default(cuid())
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  reviewerId  String
-  reviewer    User     @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
-
-  sellerId    String
-  seller      User     @relation("SellerReviews", fields: [sellerId], references: [id], onDelete: Cascade)
-
-  orderId     String   @unique // كل طلب له تقييم واحد
-
-  rating      Int      // 1-5
-  comment     String?  @db.Text
-
-  // Seller Response
-  sellerResponse String? @db.Text
-  respondedAt    DateTime?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([productId])
-  @@index([reviewerId])
-  @@index([sellerId])
-}
-
-model ProductOrder {
-  id              String        @id @default(cuid())
-  orderNumber     String        @unique // PROD-XXXX-XXXX
-
-  // Buyer
-  buyerId         String
-  buyer           User          @relation("BuyerProductOrders", fields: [buyerId], references: [id])
-
-  // Seller
-  sellerId        String
-  seller          User          @relation("SellerProductOrders", fields: [sellerId], references: [id])
-
-  // Product
-  productId       String
-  product         Product       @relation(fields: [productId], references: [id])
-
-  // Pricing
-  productPrice    Decimal       @db.Decimal(10, 2)
-  platformFee     Decimal       @db.Decimal(10, 2) // 25%
-  paymentFee      Decimal       @db.Decimal(10, 2) // 5%
-  totalAmount     Decimal       @db.Decimal(10, 2)
-  sellerEarning   Decimal       @db.Decimal(10, 2) // المبلغ الصافي
-
-  // Status
-  status          OrderStatus   @default(PENDING)
-
-  // Payment
-  payment         Payment?
-
-  // Escrow
-  escrow          Escrow?
-
-  // Delivery
-  downloadUrl     String?       // رابط تحميل مؤقت
-  downloadCount   Int           @default(0)
-  downloadExpiresAt DateTime?   // صلاحية التحميل
-
-  // Timestamps
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  completedAt     DateTime?
-
-  @@index([buyerId])
-  @@index([sellerId])
-  @@index([productId])
-  @@index([status])
-  @@index([orderNumber])
-}
-
-// ============================================
-// MARKET 2: CUSTOM SERVICES (5 tables)
-// ============================================
-
-model ServiceCategory {
-  id          String    @id @default(cuid())
-  nameAr      String
-  nameEn      String
-  slug        String    @unique
-  icon        String?
-  parentId    String?
-  parent      ServiceCategory? @relation("ServiceCategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    ServiceCategory[] @relation("ServiceCategoryHierarchy")
-  services    Service[]
-  order       Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-
-  @@index([slug])
-  @@index([parentId])
-}
-
-model Service {
-  id              String          @id @default(cuid())
-  sellerId        String
-  seller          User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-
-  // Basic Info
-  titleAr         String
-  titleEn         String
-  descriptionAr   String          @db.Text
-  descriptionEn   String          @db.Text
-  slug            String          @unique
-
-  // Category
-  categoryId      String
-  category        ServiceCategory @relation(fields: [categoryId], references: [id])
-
-  // Media
-  thumbnail       String
-  images          String[]
-  videoUrl        String?
-
-  // Packages (Basic, Standard, Premium)
-  packages        ServicePackage[]
-
-  // Metadata
-  tags            String[]
-  viewCount       Int             @default(0)
-  orderCount      Int             @default(0)
-
-  // Status
-  status          ServiceStatus   @default(PENDING)
-  rejectionReason String?         @db.Text
-
-  // Rating
-  averageRating   Decimal         @default(0) @db.Decimal(3, 2)
-  reviewCount     Int             @default(0)
-
-  // Orders
-  orders          ServiceOrder[]
-
-  // SEO
-  metaTitleAr     String?
-  metaTitleEn     String?
-  metaDescAr      String?         @db.Text
-  metaDescEn      String?         @db.Text
-
-  // AI
-  aiGenerated     Boolean         @default(false)
-  aiTags          String[]
-  aiCategory      String?
-
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  publishedAt     DateTime?
-
-  @@index([sellerId])
-  @@index([categoryId])
-  @@index([status])
-  @@index([slug])
-}
-
-model ServicePackage {
-  id              String        @id @default(cuid())
-  serviceId       String
-  service         Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-
-  // Package Type
-  type            String        // BASIC, STANDARD, PREMIUM
-
-  // Details
-  nameAr          String
-  nameEn          String
-  descriptionAr   String        @db.Text
-  descriptionEn   String        @db.Text
-
-  // Pricing
-  price           Decimal       @db.Decimal(10, 2)
-
-  // Delivery
-  deliveryDays    Int           // عدد أيام التسليم
-  revisions       Int           // عدد التعديلات
-
-  // Features
-  features        String[]      // قائمة الميزات
-
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@index([serviceId])
-}
-
-model ServiceOrder {
-  id              String              @id @default(cuid())
-  orderNumber     String              @unique // SERV-XXXX-XXXX
-
-  // Buyer
-  buyerId         String
-  buyer           User                @relation("BuyerServiceOrders", fields: [buyerId], references: [id])
-
-  // Seller
-  sellerId        String
-  seller          User                @relation("SellerServiceOrders", fields: [sellerId], references: [id])
-
-  // Service
-  serviceId       String
-  service         Service             @relation(fields: [serviceId], references: [id])
-
-  // Package Selected
-  packageType     String              // BASIC, STANDARD, PREMIUM
-  packagePrice    Decimal             @db.Decimal(10, 2)
-  deliveryDays    Int
-  revisions       Int
-
-  // Buyer Requirements
-  requirements    String              @db.Text
-  attachments     String[]            // ملفات مرفقة من المشتري
-
-  // Pricing
-  platformFee     Decimal             @db.Decimal(10, 2) // 25%
-  paymentFee      Decimal             @db.Decimal(10, 2) // 5%
-  totalAmount     Decimal             @db.Decimal(10, 2)
-  sellerEarning   Decimal             @db.Decimal(10, 2)
-
-  // Status
-  status          OrderStatus         @default(PENDING)
-
-  // Payment
-  payment         Payment?
-
-  // Escrow
-  escrow          Escrow?
-
-  // Milestones
-  milestones      ServiceMilestone[]
-
-  // Delivery
-  deliveredAt     DateTime?
-  deliveryFiles   String[]
-  deliveryNote    String?             @db.Text
-
-  // Timestamps
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  completedAt     DateTime?
-  deadline        DateTime?
-
-  @@index([buyerId])
-  @@index([sellerId])
-  @@index([serviceId])
-  @@index([status])
-  @@index([orderNumber])
-}
-
-model ServiceMilestone {
-  id              String        @id @default(cuid())
-  orderId         String
-  order           ServiceOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  title           String
-  description     String?       @db.Text
-  amount          Decimal       @db.Decimal(10, 2)
-
-  status          OrderStatus   @default(PENDING)
-
-  deliveryFiles   String[]
-  deliveryNote    String?       @db.Text
-
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deliveredAt     DateTime?
-  acceptedAt      DateTime?
-
-  @@index([orderId])
-}
-
-// ============================================
-// MARKET 3: FREELANCE PROJECTS (5 tables)
-// ============================================
-
-model ProjectCategory {
-  id          String    @id @default(cuid())
-  nameAr      String
-  nameEn      String
-  slug        String    @unique
-  icon        String?
-  parentId    String?
-  parent      ProjectCategory? @relation("ProjectCategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    ProjectCategory[] @relation("ProjectCategoryHierarchy")
-  projects    Project[]
-  order       Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-
-  @@index([slug])
-  @@index([parentId])
-}
-
-model Project {
-  id              String          @id @default(cuid())
-  clientId        String
-  client          User            @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
-
-  // Basic Info
-  titleAr         String
-  titleEn         String
-  descriptionAr   String          @db.Text
-  descriptionEn   String          @db.Text
-  slug            String          @unique
-
-  // Category
-  categoryId      String
-  category        ProjectCategory @relation(fields: [categoryId], references: [id])
-
-  // Budget
-  budgetMin       Decimal?        @db.Decimal(10, 2)
-  budgetMax       Decimal?        @db.Decimal(10, 2)
-  budgetType      String          // FIXED, HOURLY
-
-  // Timeline
-  duration        Int?            // عدد الأيام المتوقعة
-  deadline        DateTime?
-
-  // Requirements
-  skills          String[]
-  attachments     String[]
-
-  // Status
-  status          ProjectStatus   @default(OPEN)
-
-  // Proposals
-  proposals       Proposal[]
-  proposalCount   Int             @default(0)
-
-  // Contract (عند القبول)
-  contract        Contract?
-
-  // Metadata
-  viewCount       Int             @default(0)
-
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  publishedAt     DateTime?
-  closedAt        DateTime?
-
-  @@index([clientId])
-  @@index([categoryId])
-  @@index([status])
-  @@index([slug])
-}
-
-model Proposal {
-  id              String    @id @default(cuid())
-  projectId       String
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  freelancerId    String
-  freelancer      User      @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
-
-  // Proposal Details
-  coverLetter     String    @db.Text
-  proposedAmount  Decimal   @db.Decimal(10, 2)
-  deliveryDays    Int
-
-  // Attachments
-  attachments     String[]
-
-  // Milestones (optional)
-  milestonesJson  String?   @db.Text // JSON array of milestones
-
-  // Status
-  status          String    @default("PENDING") // PENDING, ACCEPTED, REJECTED
-
-  // Contract (إذا تم القبول)
-  contract        Contract?
-
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@index([projectId])
-  @@index([freelancerId])
-}
-
-model Contract {
-  id              String      @id @default(cuid())
-  contractNumber  String      @unique // PROJ-XXXX-XXXX
-
-  // Project
-  projectId       String      @unique
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  // Client (صاحب المشروع)
-  clientId        String
-  client          User        @relation("ClientContracts", fields: [clientId], references: [id])
-
-  // Freelancer
-  freelancerId    String
-  freelancer      User        @relation("FreelancerContracts", fields: [freelancerId], references: [id])
-
-  // Proposal
-  proposalId      String      @unique
-  proposal        Proposal    @relation(fields: [proposalId], references: [id])
-
-  // Contract Terms
-  totalAmount     Decimal     @db.Decimal(10, 2)
-  platformFee     Decimal     @db.Decimal(10, 2) // 25%
-  paymentFee      Decimal     @db.Decimal(10, 2) // 5%
-  freelancerEarning Decimal   @db.Decimal(10, 2)
-
-  startDate       DateTime    @default(now())
-  deadline        DateTime?
-
-  // Status
-  status          ProjectStatus @default(IN_PROGRESS)
-
-  // Payment
-  payment         Payment?
-
-  // Escrow
-  escrow          Escrow?
-
-  // Milestones
-  milestones      Milestone[]
-
-  // Completion
-  deliveryFiles   String[]
-  deliveryNote    String?     @db.Text
-  completedAt     DateTime?
-
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  @@index([projectId])
-  @@index([clientId])
-  @@index([freelancerId])
-  @@index([proposalId])
-  @@index([status])
-}
-
-model Milestone {
-  id              String      @id @default(cuid())
-  contractId      String
-  contract        Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
-  title           String
-  description     String?     @db.Text
-  amount          Decimal     @db.Decimal(10, 2)
-  deadline        DateTime?
-
-  status          OrderStatus @default(PENDING)
-
-  deliveryFiles   String[]
-  deliveryNote    String?     @db.Text
-
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  deliveredAt     DateTime?
-  acceptedAt      DateTime?
-
-  @@index([contractId])
-}
-
-// ============================================
-// PAYMENTS & ESCROW (4 tables)
-// ============================================
-
-model Payment {
-  id                String          @id @default(cuid())
-  paymentNumber     String          @unique // PAY-XXXX-XXXX
-
-  // Payer
-  payerId           String
-
-  // Amount
-  amount            Decimal         @db.Decimal(10, 2)
-  currency          String          @default("SAR")
-
-  // Payment Method
-  method            PaymentMethod
-
-  // Status
-  status            PaymentStatus   @default(PENDING)
-
-  // Gateway Response
-  gatewayTransactionId String?
-  gatewayResponse      String?      @db.Text // JSON response
-
-  // Market Type
-  marketType        MarketType
-
-  // Relations (one-to-one with orders)
-  productOrder      ProductOrder?   @relation(fields: [productOrderId], references: [id])
-  productOrderId    String?         @unique
-
-  serviceOrder      ServiceOrder?   @relation(fields: [serviceOrderId], references: [id])
-  serviceOrderId    String?         @unique
-
-  contract          Contract?       @relation(fields: [contractId], references: [id])
-  contractId        String?         @unique
-
-  // Timestamps
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  completedAt       DateTime?
-
-  @@index([payerId])
-  @@index([status])
-  @@index([paymentNumber])
-}
-
-model Escrow {
-  id                String          @id @default(cuid())
-
-  // Amount
-  amount            Decimal         @db.Decimal(10, 2)
-
-  // Buyer & Seller
-  buyerId           String
-  sellerId          String
-
-  // Status
-  status            EscrowStatus    @default(PENDING)
-
-  // Market Type
-  marketType        MarketType
-
-  // Relations
-  productOrder      ProductOrder?   @relation(fields: [productOrderId], references: [id])
-  productOrderId    String?         @unique
-
-  serviceOrder      ServiceOrder?   @relation(fields: [serviceOrderId], references: [id])
-  serviceOrderId    String?         @unique
-
-  contract          Contract?       @relation(fields: [contractId], references: [id])
-  contractId        String?         @unique
-
-  // Release/Refund
-  releasedAt        DateTime?
-  refundedAt        DateTime?
-
-  // Timestamps
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  @@index([buyerId])
-  @@index([sellerId])
-  @@index([status])
-}
-
-model Wallet {
-  id              String        @id @default(cuid())
-  userId          String        @unique
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Balance
-  balance         Decimal       @default(0) @db.Decimal(10, 2)
-  pendingBalance  Decimal       @default(0) @db.Decimal(10, 2) // في الضمان
-
-  // Currency
-  currency        String        @default("SAR")
-
-  // Withdrawals
-  withdrawals     Withdrawal[]
-
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@index([userId])
-}
-
-model Withdrawal {
-  id              String            @id @default(cuid())
-  userId          String
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  walletId        String
-  wallet          Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
-
-  // Amount
-  amount          Decimal           @db.Decimal(10, 2)
-  currency        String            @default("SAR")
-
-  // Bank Details (JSON)
-  bankDetails     String            @db.Text
-
-  // Status
-  status          WithdrawalStatus  @default(PENDING)
-
-  // Admin Review
-  reviewedBy      String?
-  reviewNote      String?           @db.Text
-
-  // Timestamps
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  completedAt     DateTime?
-
-  @@index([userId])
-  @@index([walletId])
-  @@index([status])
-}
-
-// ============================================
-// DISPUTES & MESSAGING (3 tables)
-// ============================================
-
-model Dispute {
-  id                String          @id @default(cuid())
-  disputeNumber     String          @unique // DIS-XXXX-XXXX
-
-  // Parties
-  complainantId     String
-  complainant       User            @relation("ComplainantDisputes", fields: [complainantId], references: [id])
-
-  respondentId      String
-  respondent        User            @relation("RespondentDisputes", fields: [respondentId], references: [id])
-
-  // Order Type
-  marketType        MarketType
-  orderId           String          // ID of ProductOrder, ServiceOrder, or Contract
-
-  // Dispute Details
-  reason            DisputeReason
-  description       String          @db.Text
-  attachments       String[]
-
-  // Status
-  status            DisputeStatus   @default(OPEN)
-
-  // Resolution
-  resolution        String?         @db.Text
-  resolvedBy        String?         // Admin user ID
-  resolvedAt        DateTime?
-
-  // Outcome
-  refundAmount      Decimal?        @db.Decimal(10, 2)
-
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  @@index([complainantId])
-  @@index([respondentId])
-  @@index([status])
-  @@index([disputeNumber])
-}
-
-model Message {
-  id              String    @id @default(cuid())
-
-  // Sender & Recipient
-  senderId        String
-  sender          User      @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade)
-
-  recipientId     String
-  recipient       User      @relation("RecipientMessages", fields: [recipientId], references: [id], onDelete: Cascade)
-
-  // Content
-  content         String    @db.Text
-  attachments     String[]
-
-  // Context (optional)
-  orderId         String?   // لربط المحادثة بطلب معين
-  marketType      MarketType?
-
-  // Status
-  isRead          Boolean   @default(false)
-  readAt          DateTime?
-
-  createdAt       DateTime  @default(now())
-
-  @@index([senderId])
-  @@index([recipientId])
-  @@index([orderId])
-}
-
-model Notification {
-  id              String            @id @default(cuid())
-  userId          String
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Notification Details
-  type            NotificationType
-  titleAr         String
-  titleEn         String
-  messageAr       String            @db.Text
-  messageEn       String            @db.Text
-
-  // Link
-  link            String?
-
-  // Status
-  isRead          Boolean           @default(false)
-  readAt          DateTime?
-
-  createdAt       DateTime          @default(now())
-
-  @@index([userId])
-  @@index([isRead])
-}
-
-// ============================================
-// AUDIT LOG (1 table)
-// ============================================
-
-model AuditLog {
-  id              String    @id @default(cuid())
-
-  // User
-  userId          String?
-  userRole        String?
-
-  // Action
-  action          String    // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
-  entity          String    // User, Product, Order, etc.
-  entityId        String?
-
-  // Details
-  changes         String?   @db.Text // JSON of changes
-  ipAddress       String?
-  userAgent       String?
-
-  createdAt       DateTime  @default(now())
-
-  @@index([userId])
-  @@index([action])
-  @@index([entity])
-  @@index([createdAt])
+  PENDING
+  APPROVED
+  COMPLETED
+  REJECTED
 }
