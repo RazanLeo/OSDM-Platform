@@ -10,6 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Search,
   SlidersHorizontal,
@@ -22,8 +23,11 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
+  List,
+  Grid,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CategoriesView } from "./categories-view"
 
 interface ReadyProductsClientProps {
   locale: Locale
@@ -289,6 +293,36 @@ export function ReadyProductsClient({
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Tabs للتبديل بين المنتجات والتصنيفات */}
+        <Tabs defaultValue="products" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="products" className="flex items-center gap-2">
+              <Grid className="h-4 w-4" />
+              {isArabic ? "المنتجات" : "Products"}
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              {isArabic ? "جميع التصنيفات" : "All Categories"}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* عرض التصنيفات الكاملة */}
+          <TabsContent value="categories">
+            <CategoriesView
+              locale={locale}
+              categories={categories}
+              onSelectType={(catId, subId, typeId) => {
+                setSelectedCategory(catId)
+                setSelectedSubcategory(subId)
+                // Switch to products tab to show results
+                const tab = document.querySelector('[value="products"]') as HTMLButtonElement
+                tab?.click()
+              }}
+            />
+          </TabsContent>
+
+          {/* عرض المنتجات */}
+          <TabsContent value="products">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar - Filters */}
           <aside
@@ -648,6 +682,8 @@ export function ReadyProductsClient({
             )}
           </main>
         </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

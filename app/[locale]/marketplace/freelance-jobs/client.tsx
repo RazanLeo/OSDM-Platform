@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Search,
   Clock,
@@ -29,8 +30,11 @@ import {
   TrendingUp,
   Award,
   CheckCircle2,
+  Grid,
+  List,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CategoriesView } from "./categories-view"
 
 interface FreelanceJobsClientProps {
   locale: Locale
@@ -249,6 +253,7 @@ export function FreelanceJobsClient({
   const [showFilters, setShowFilters] = useState(false)
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set())
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -391,6 +396,30 @@ export function FreelanceJobsClient({
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        <Tabs defaultValue="jobs" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="jobs">
+              <Grid className="h-4 w-4 mr-2" />
+              {isArabic ? "المشاريع" : "Projects"}
+            </TabsTrigger>
+            <TabsTrigger value="categories">
+              <List className="h-4 w-4 mr-2" />
+              {isArabic ? "جميع التصنيفات" : "All Categories"}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="categories" className="mt-6">
+            <CategoriesView
+              locale={locale}
+              categories={categories}
+              onSelectType={(catId, subId, typeId) => {
+                setSelectedCategory(catId)
+                setSelectedSubcategory(subId)
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="jobs" className="mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar - Filters */}
           <aside className={cn("lg:col-span-1", showFilters ? "block" : "hidden lg:block")}>
@@ -763,6 +792,8 @@ export function FreelanceJobsClient({
             )}
           </main>
         </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

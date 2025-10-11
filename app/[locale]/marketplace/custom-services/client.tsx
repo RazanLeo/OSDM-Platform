@@ -26,8 +26,11 @@ import {
   Zap,
   Award,
   TrendingUp,
+  Grid,
+  List,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CategoriesView } from "./categories-view"
 
 interface CustomServicesClientProps {
   locale: Locale
@@ -275,6 +278,7 @@ export function CustomServicesClient({
   const [showFilters, setShowFilters] = useState(false)
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const itemsPerPage = 12
 
   useEffect(() => {
@@ -408,6 +412,30 @@ export function CustomServicesClient({
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        <Tabs defaultValue="services" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="services">
+              <Grid className="h-4 w-4 mr-2" />
+              {isArabic ? "الخدمات" : "Services"}
+            </TabsTrigger>
+            <TabsTrigger value="categories">
+              <List className="h-4 w-4 mr-2" />
+              {isArabic ? "جميع التصنيفات" : "All Categories"}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="categories" className="mt-6">
+            <CategoriesView
+              locale={locale}
+              categories={categories}
+              onSelectType={(catId, subId, typeId) => {
+                setSelectedCategory(catId)
+                setSelectedSubcategory(subId)
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="services" className="mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar - Filters */}
           <aside className={cn("lg:col-span-1", showFilters ? "block" : "hidden lg:block")}>
@@ -746,6 +774,8 @@ export function CustomServicesClient({
             )}
           </main>
         </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
