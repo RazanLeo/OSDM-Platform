@@ -1068,3 +1068,7 @@ export const freelanceJobsCategories: Category[] = [
     ],
   },
 ]
+
+
+// Alias for backward compatibility
+export const projectsCategories = freelanceJobsCategories
