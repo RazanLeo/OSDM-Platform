@@ -220,6 +220,7 @@ model Product {
   thumbnail       String
   images          String[]
   demoUrl         String?
+  previewImages   String[]
   tags            String[]
   downloadCount   Int             @default(0)
   viewCount       Int             @default(0)
@@ -227,6 +228,8 @@ model Product {
   rejectionReason String?
   averageRating   Decimal         @default(0) @db.Decimal(3, 2)
   reviewCount     Int             @default(0)
+  isExclusive     Boolean         @default(false)
+  productType     String?
   metaTitleAr     String?
   metaTitleEn     String?
   metaDescAr      String?
@@ -248,6 +251,8 @@ model Product {
   @@index([sellerId])
   @@index([slug])
   @@index([status])
+  @@index([isExclusive])
+  @@index([productType])
 }
 
 model ProductCategory {
@@ -337,20 +342,21 @@ model ProductOrder {
 }
 
 model ProductReview {
-  id                                  String    @id
+  id                                  String          @id
   productId                           String
   reviewerId                          String
   sellerId                            String
-  orderId                             String    @unique
+  orderId                             String          @unique
   rating                              Int
   comment                             String?
   sellerResponse                      String?
   respondedAt                         DateTime?
-  createdAt                           DateTime  @default(now())
+  createdAt                           DateTime        @default(now())
   updatedAt                           DateTime
-  Product                             Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  User_ProductReview_reviewerIdToUser User      @relation("ProductReview_reviewerIdToUser", fields: [reviewerId], references: [id], onDelete: Cascade)
-  User_ProductReview_sellerIdToUser   User      @relation("ProductReview_sellerIdToUser", fields: [sellerId], references: [id], onDelete: Cascade)
+  Product                             Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User_ProductReview_reviewerIdToUser User            @relation("ProductReview_reviewerIdToUser", fields: [reviewerId], references: [id], onDelete: Cascade)
+  User_ProductReview_sellerIdToUser   User            @relation("ProductReview_sellerIdToUser", fields: [sellerId], references: [id], onDelete: Cascade)
+  ReviewResponse                      ReviewResponse?
 
   @@index([productId])
   @@index([reviewerId])
@@ -384,6 +390,8 @@ model Project {
   ProjectCategory ProjectCategory @relation(fields: [categoryId], references: [id])
   User            User            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   Proposal        Proposal[]
+  ZeroFeeProject  ZeroFeeProject?
+  ProjectBid      ProjectBid[]
 
   @@index([categoryId])
   @@index([clientId])
@@ -475,6 +483,7 @@ model Service {
   ServiceOrder        ServiceOrder[]
   ServicePackage      ServicePackage[]
   ServiceRequirement  ServiceRequirement[]
+  GigExtra            GigExtra[]
 
   @@index([categoryId])
   @@index([sellerId])
@@ -631,6 +640,7 @@ model User {
   bio                                          String?
   skills                                       String[]
   languages                                    String[]
+  videoIntroUrl                                String?
   emailVerified                                Boolean         @default(false)
   phoneVerified                                Boolean         @default(false)
   sellerLevel                                  SellerLevel     @default(NEW)
@@ -676,6 +686,15 @@ model User {
   BuyerRequest                                 BuyerRequest[]
   Delivery                                     Delivery[]
   SellerBadge                                  SellerBadge[]
+  DiscountCode                                 DiscountCode[]
+  EmailCampaign                                EmailCampaign[]
+  Customer_Seller                              Customer[]      @relation("CustomerSeller")
+  Customer_Buyer                               Customer[]      @relation("CustomerBuyer")
+  SellerResponseTemplate                       SellerResponseTemplate[]
+  ProposalTemplate                             ProposalTemplate[]
+  AiProposal                                   AiProposal[]
+  SkillVerification                            SkillVerification[]
+  ProjectBid                                   ProjectBid[]
 
   @@index([email])
   @@index([role])
@@ -1106,4 +1125,245 @@ model PromotedListing {
   @@index([userId])
   @@index([isActive])
   @@index([startDate])
+}
+
+// ============================================
+// MISSING FEATURES FROM ALL 7 PLATFORMS
+// ============================================
+
+// From Gumroad: Discount Codes & Email Marketing
+model DiscountCode {
+  id              String   @id
+  code            String   @unique
+  sellerId        String
+  productId       String?
+  serviceId       String?
+  discountType    String   // PERCENTAGE, FIXED_AMOUNT
+  discountValue   Decimal  @db.Decimal(10, 2)
+  maxUses         Int?
+  usedCount       Int      @default(0)
+  expiresAt       DateTime?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  User            User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([code])
+  @@index([sellerId])
+  @@index([isActive])
+}
+
+model EmailCampaign {
+  id              String   @id
+  sellerId        String
+  subject         String
+  contentAr       String
+  contentEn       String
+  recipientType   String   // ALL_CUSTOMERS, SUBSCRIBERS, SPECIFIC
+  recipientIds    String[]
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  status          String   @default("DRAFT")
+  openCount       Int      @default(0)
+  clickCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([status])
+}
+
+// From Gumroad: Customer Relationship Management
+model Customer {
+  id              String   @id
+  sellerId        String
+  buyerId         String
+  firstPurchase   DateTime @default(now())
+  lastPurchase    DateTime @default(now())
+  totalSpent      Decimal  @default(0) @db.Decimal(10, 2)
+  totalOrders     Int      @default(0)
+  tags            String[]
+  notes           String?
+  isSubscribed    Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  Seller          User     @relation("CustomerSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  Buyer           User     @relation("CustomerBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerId, buyerId])
+  @@index([sellerId])
+  @@index([buyerId])
+}
+
+// From Picalica: Product Types & Exclusivity
+model ProductType {
+  id              String    @id
+  nameAr          String
+  nameEn          String
+  slug            String    @unique
+  description     String?
+  icon            String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  @@index([slug])
+}
+
+// From Fiverr: Gig Extras & Video Intro
+model GigExtra {
+  id              String   @id
+  serviceId       String
+  titleAr         String
+  titleEn         String
+  descriptionAr   String
+  descriptionEn   String
+  price           Decimal  @db.Decimal(10, 2)
+  deliveryDays    Int
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  Service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+}
+
+model SellerResponseTemplate {
+  id              String   @id
+  sellerId        String
+  titleAr         String
+  titleEn         String
+  contentAr       String
+  contentEn       String
+  category        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+// From Upwork: Uma AI & Advanced Proposal System
+model ProposalTemplate {
+  id              String   @id
+  freelancerId    String
+  titleAr         String
+  titleEn         String
+  contentAr       String
+  contentEn       String
+  category        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+
+  @@index([freelancerId])
+}
+
+model AiProposal {
+  id              String   @id
+  userId          String
+  projectId       String
+  prompt          String
+  generatedProposal String
+  isUsed          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+// From Mostaql: Skills Verification
+model SkillVerification {
+  id              String   @id
+  userId          String
+  skill           String
+  level           String   // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  score           Int?
+  certificateUrl  String?
+  expiresAt       DateTime?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([skill])
+}
+
+// From Bahr: Zero Fees Projects & Industry Categories
+model IndustryCategory {
+  id              String   @id
+  nameAr          String
+  nameEn          String
+  slug            String   @unique
+  icon            String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([slug])
+}
+
+model ZeroFeeProject {
+  id              String   @id
+  projectId       String   @unique
+  sponsorId       String?
+  reason          String
+  approvedBy      String?
+  approvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  Project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([sponsorId])
+}
+
+// Enhanced Bid System (Bahr/Mostaql)
+model ProjectBid {
+  id              String   @id
+  projectId       String
+  freelancerId    String
+  proposalAr      String
+  proposalEn      String
+  bidAmount       Decimal  @db.Decimal(10, 2)
+  deliveryDays    Int
+  attachments     String[]
+  status          String   @default("PENDING")
+  isShortlisted   Boolean  @default(false)
+  viewedAt        DateTime?
+  respondedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  Project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User            User     @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([freelancerId])
+  @@index([status])
+}
+
+// Rating & Review System Enhancement
+model ReviewResponse {
+  id              String        @id
+  reviewId        String        @unique
+  productReviewId String?       @unique
+  response        String
+  respondedAt     DateTime      @default(now())
+  ProductReview   ProductReview? @relation(fields: [productReviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+}
+
+// Instant Download Tracking (Gumroad)
+model DownloadLog {
+  id              String   @id
+  productOrderId  String
+  productId       String
+  buyerId         String
+  downloadedAt    DateTime @default(now())
+  ipAddress       String?
+  userAgent       String?
+
+  @@index([productOrderId])
+  @@index([productId])
+  @@index([buyerId])
 }
