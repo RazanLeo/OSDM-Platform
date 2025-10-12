@@ -239,6 +239,7 @@ model Product {
   ProductCategory ProductCategory @relation(fields: [categoryId], references: [id])
   User            User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   ProductFile     ProductFile[]
+  ProductPackage  ProductPackage[]
   ProductOrder    ProductOrder[]
   ProductReview   ProductReview[]
 
@@ -277,6 +278,30 @@ model ProductFile {
   Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
+}
+
+model ProductPackage {
+  id              String      @id
+  productId       String
+  tier            PackageTier
+  nameAr          String
+  nameEn          String
+  descriptionAr   String
+  descriptionEn   String
+  price           Decimal     @db.Decimal(10, 2)
+  features        String[]
+  deliveryDays    Int?
+  revisions       Int?
+  isUnlimited     Boolean     @default(false)
+  files           String[]
+  isActive        Boolean     @default(true)
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime
+  Product         Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([tier])
 }
 
 model ProductOrder {
@@ -530,22 +555,29 @@ model ServiceOrder {
 }
 
 model ServicePackage {
-  id            String   @id
-  serviceId     String
-  type          String
-  nameAr        String
-  nameEn        String
-  descriptionAr String
-  descriptionEn String
-  price         Decimal  @db.Decimal(10, 2)
-  deliveryDays  Int
-  revisions     Int
-  features      String[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime
-  Service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  id              String      @id
+  serviceId       String
+  tier            PackageTier
+  nameAr          String
+  nameEn          String
+  descriptionAr   String
+  descriptionEn   String
+  price           Decimal     @db.Decimal(10, 2)
+  deliveryDays    Int
+  revisions       Int
+  isUnlimited     Boolean     @default(false)
+  features        String[]
+  extras          String[]
+  quickDelivery   Boolean     @default(false)
+  quickDeliveryFee Decimal?   @db.Decimal(10, 2)
+  isActive        Boolean     @default(true)
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime
+  Service         Service     @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@index([serviceId])
+  @@index([tier])
 }
 
 model Session {
@@ -597,6 +629,15 @@ model User {
   languages                                    String[]
   emailVerified                                Boolean         @default(false)
   phoneVerified                                Boolean         @default(false)
+  sellerLevel                                  SellerLevel     @default(NEW)
+  totalSales                                   Int             @default(0)
+  totalEarnings                                Decimal         @default(0) @db.Decimal(10, 2)
+  completionRate                               Decimal         @default(0) @db.Decimal(5, 2)
+  responseTime                                 Int?
+  totalGigs                                    Int             @default(0)
+  maxGigs                                      Int             @default(4)
+  isPromoted                                   Boolean         @default(false)
+  promotionExpiresAt                           DateTime?
   createdAt                                    DateTime        @default(now())
   updatedAt                                    DateTime
   lastLoginAt                                  DateTime?
@@ -622,10 +663,13 @@ model User {
   Subscription                                 Subscription?
   Wallet                                       Wallet?
   Withdrawal                                   Withdrawal[]
+  Affiliate                                    Affiliate[]
+  PromotedListing                              PromotedListing[]
 
   @@index([email])
   @@index([role])
   @@index([username])
+  @@index([sellerLevel])
 }
 
 model Wallet {
@@ -786,4 +830,76 @@ enum WithdrawalStatus {
   APPROVED
   COMPLETED
   REJECTED
+}
+
+enum SellerLevel {
+  NEW
+  LEVEL_1
+  LEVEL_2
+  TOP_RATED
+}
+
+enum PackageTier {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+model Affiliate {
+  id              String   @id
+  userId          String
+  affiliateCode   String   @unique
+  commission      Decimal  @default(10) @db.Decimal(5, 2)
+  totalClicks     Int      @default(0)
+  totalSales      Int      @default(0)
+  totalEarnings   Decimal  @default(0) @db.Decimal(10, 2)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  AffiliateSale   AffiliateSale[]
+
+  @@index([userId])
+  @@index([affiliateCode])
+}
+
+model AffiliateSale {
+  id              String   @id
+  affiliateId     String
+  productId       String?
+  serviceId       String?
+  orderId         String
+  saleAmount      Decimal  @db.Decimal(10, 2)
+  commission      Decimal  @db.Decimal(10, 2)
+  status          String   @default("PENDING")
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  Affiliate       Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([orderId])
+  @@index([status])
+}
+
+model PromotedListing {
+  id              String   @id
+  userId          String
+  productId       String?
+  serviceId       String?
+  projectId       String?
+  budget          Decimal  @db.Decimal(10, 2)
+  spent           Decimal  @default(0) @db.Decimal(10, 2)
+  clicks          Int      @default(0)
+  views           Int      @default(0)
+  orders          Int      @default(0)
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([startDate])
 }
