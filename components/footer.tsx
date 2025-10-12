@@ -4,7 +4,7 @@ import type { Locale } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/get-dictionary"
 
 export async function Footer({ locale }: { locale: Locale }) {
-  const t = getDictionary(locale)
+  const t = await getDictionary(locale)
   const isArabic = locale === "ar"
 
   const paymentMethods = [

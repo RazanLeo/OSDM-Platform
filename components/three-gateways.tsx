@@ -6,7 +6,7 @@ import type { Locale } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/get-dictionary"
 
 export async function ThreeGateways({ locale }: { locale: Locale }) {
-  const t = getDictionary(locale)
+  const t = await getDictionary(locale)
 
   const gateways = [
     {

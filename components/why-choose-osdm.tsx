@@ -3,7 +3,7 @@ import { getDictionary } from "@/lib/i18n/get-dictionary"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export async function WhyChooseOSDM({ locale }: { locale: Locale }) {
-  const t = getDictionary(locale)
+  const t = await getDictionary(locale)
 
   const features = [
     { title: t.feature1Title, desc: t.feature1Desc },

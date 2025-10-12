@@ -75,15 +75,16 @@ export default async function BuyerDashboardPage({
 }: {
   params: Promise<{ locale: Locale }>
 }) {
+  const { locale } = await params
   const session = await getServerSession(authOptions)
 
   // Check if user is authenticated and is a buyer
   if (!session) {
-    redirect(`/${params.locale}/auth/login`)
+    redirect(`/${locale}/auth/login`)
   }
 
   if (session.user.role !== "BUYER") {
-    redirect(`/${params.locale}/dashboard/${session.user.role.toLowerCase()}`)
+    redirect(`/${locale}/dashboard/${session.user.role.toLowerCase()}`)
   }
 
   // Fetch all data in parallel
@@ -111,7 +112,7 @@ export default async function BuyerDashboardPage({
 
   return (
     <BuyerDashboardClient
-      locale={params.locale}
+      locale={locale}
       statsData={statsData}
       purchasesData={purchasesData}
       ordersData={ordersData}

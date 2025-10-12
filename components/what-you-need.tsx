@@ -4,7 +4,7 @@ import { getDictionary } from "@/lib/i18n/get-dictionary"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export async function WhatYouNeed({ locale }: { locale: Locale }) {
-  const t = getDictionary(locale)
+  const t = await getDictionary(locale)
 
   const needs = [
     { icon: Laptop, title: t.need1Title, desc: t.need1Desc, color: "text-[#846F9C]" },

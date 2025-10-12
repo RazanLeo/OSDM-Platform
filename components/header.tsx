@@ -10,7 +10,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth/config"
 
 export async function Header({ locale }: { locale: Locale }) {
-  const t = getDictionary(locale)
+  const t = await getDictionary(locale)
   const isArabic = locale === "ar"
   const session = await getServerSession(authOptions)
 
