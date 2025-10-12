@@ -22,8 +22,16 @@ async function main() {
     for (const category of productCategories) {
       await prisma.productCategory.upsert({
         where: { slug: category.slug },
-        update: category,
-        create: category,
+        update: {
+          nameAr: category.nameAr,
+          nameEn: category.nameEn,
+          parentId: category.parentId,
+          order: category.order,
+        },
+        create: {
+          id: `prod-cat-${category.slug}`,
+          ...category,
+        },
       })
     }
     console.log(`✅ ${productCategories.length} Product Categories seeded`)
@@ -33,8 +41,16 @@ async function main() {
     for (const category of serviceCategories) {
       await prisma.serviceCategory.upsert({
         where: { slug: category.slug },
-        update: category,
-        create: category,
+        update: {
+          nameAr: category.nameAr,
+          nameEn: category.nameEn,
+          parentId: category.parentId,
+          order: category.order,
+        },
+        create: {
+          id: `serv-cat-${category.slug}`,
+          ...category,
+        },
       })
     }
     console.log(`✅ ${serviceCategories.length} Service Categories seeded`)
@@ -44,8 +60,16 @@ async function main() {
     for (const category of projectCategories) {
       await prisma.projectCategory.upsert({
         where: { slug: category.slug },
-        update: category,
-        create: category,
+        update: {
+          nameAr: category.nameAr,
+          nameEn: category.nameEn,
+          parentId: category.parentId,
+          order: category.order,
+        },
+        create: {
+          id: `proj-cat-${category.slug}`,
+          ...category,
+        },
       })
     }
     console.log(`✅ ${projectCategories.length} Project Categories seeded`)
@@ -57,8 +81,11 @@ async function main() {
     const adminPassword = await bcrypt.hash('RazanOSDM@056300', 10)
     const admin = await prisma.user.upsert({
       where: { username: 'Razan@OSDM' },
-      update: {},
+      update: {
+        password: adminPassword,
+      },
       create: {
+        id: 'user-razan-osdm',
         username: 'Razan@OSDM',
         email: 'razan@osdm.sa',
         password: adminPassword,
@@ -70,6 +97,7 @@ async function main() {
         bio: 'مديرة ومؤسسة منصة OSDM',
         emailVerified: true,
         phoneVerified: true,
+        updatedAt: new Date(),
       },
     })
     console.log('✅ Main Admin created:', {
@@ -79,11 +107,14 @@ async function main() {
     })
 
     // Admin Account - admin@osdm.sa
-    const adminAccountPassword = await bcrypt.hash('123456', 10)
+    const adminAccountPassword = await bcrypt.hash('admin@123456', 10)
     const adminAccount = await prisma.user.upsert({
       where: { email: 'admin@osdm.sa' },
-      update: {},
+      update: {
+        password: adminAccountPassword,
+      },
       create: {
+        id: 'user-admin-osdm',
         username: 'admin',
         email: 'admin@osdm.sa',
         password: adminAccountPassword,
@@ -95,6 +126,7 @@ async function main() {
         bio: 'حساب تجريبي للمدير',
         emailVerified: true,
         phoneVerified: true,
+        updatedAt: new Date(),
       },
     })
     console.log('✅ Admin Account created:', {
@@ -104,11 +136,14 @@ async function main() {
     })
 
     // Guest Account - Buyer & Seller
-    const guestPassword = await bcrypt.hash('123456', 10)
+    const guestPassword = await bcrypt.hash('guest@123456', 10)
     const guest = await prisma.user.upsert({
       where: { email: 'Guest@osdm.sa' },
-      update: {},
+      update: {
+        password: guestPassword,
+      },
       create: {
+        id: 'user-guest-osdm',
         username: 'Guest',
         email: 'Guest@osdm.sa',
         password: guestPassword,
@@ -120,6 +155,7 @@ async function main() {
         bio: 'حساب تجريبي للمشتري والبائع',
         emailVerified: true,
         phoneVerified: true,
+        updatedAt: new Date(),
       },
     })
     console.log('✅ Guest Account created:', {
@@ -135,10 +171,12 @@ async function main() {
       where: { userId: admin.id },
       update: {},
       create: {
+        id: `wallet-${admin.id}`,
         userId: admin.id,
         balance: new Decimal(0),
         pendingBalance: new Decimal(0),
         currency: 'SAR',
+        updatedAt: new Date(),
       },
     })
 
@@ -146,10 +184,12 @@ async function main() {
       where: { userId: adminAccount.id },
       update: {},
       create: {
+        id: `wallet-${adminAccount.id}`,
         userId: adminAccount.id,
         balance: new Decimal(0),
         pendingBalance: new Decimal(0),
         currency: 'SAR',
+        updatedAt: new Date(),
       },
     })
 
@@ -157,10 +197,12 @@ async function main() {
       where: { userId: guest.id },
       update: {},
       create: {
+        id: `wallet-${guest.id}`,
         userId: guest.id,
         balance: new Decimal(0),
         pendingBalance: new Decimal(0),
         currency: 'SAR',
+        updatedAt: new Date(),
       },
     })
 
@@ -187,6 +229,7 @@ async function main() {
         smePrice: new Decimal(250.00),
         largePrice: new Decimal(500.00),
         disputeWindowDays: 7,
+        updatedAt: new Date(),
       },
     })
     console.log('✅ Revenue Settings created:', {

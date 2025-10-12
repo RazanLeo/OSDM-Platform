@@ -23,12 +23,12 @@ export const translations = {
     startSelling: "ابدأ البيع",
 
     // Three Gateways
-    gateway1Title: "سوق المنتجات والخدمات الرقمية الجاهزة",
-    gateway1Desc: "منتجات وخدمات رقمية جاهزة للشراء والتحميل الفوري",
-    gateway2Title: "سوق المنتجات والخدمات الرقمية المتخصصة حسب الطلب",
+    gateway1Title: "المنتجات الرقمية الجاهزة",
+    gateway1Desc: "منتجات رقمية جاهزة للشراء والتحميل الفوري",
+    gateway2Title: "الخدمات الرقمية المتخصصة حسب الطلب",
     gateway2Desc: "خدمات ومنتجات رقمية مخصصة حسب احتياجاتك",
-    gateway3Title: "سوق فرص العمل الحر عن بعد",
-    gateway3Desc: "فرص عمل حر تربط المستقلين بالشركات لتنفيذ المشاريع والمهام",
+    gateway3Title: "فرص العمل الرقمي الحر عن بعد",
+    gateway3Desc: "مشاريع، مهام، وأعمال تربط المستقلين بالشركات",
     enterMarket: "دخول السوق",
 
     // Why Choose OSDM
@@ -255,12 +255,12 @@ export const translations = {
     startSelling: "Start Selling",
 
     // Three Gateways
-    gateway1Title: "Ready-Made Digital Products & Services Market",
-    gateway1Desc: "Ready-to-buy digital products and services for instant download",
-    gateway2Title: "Custom Digital Products & Services Market",
+    gateway1Title: "Ready Made Digital Products",
+    gateway1Desc: "Ready-to-buy digital products for instant download",
+    gateway2Title: "Custom Digital Products & Services by Order",
     gateway2Desc: "Customized digital services and products tailored to your needs",
-    gateway3Title: "Remote Freelance Work Opportunities Market",
-    gateway3Desc: "Freelance opportunities connecting independents with companies to execute projects and tasks",
+    gateway3Title: "Remote Work Opportunities for Freelancers",
+    gateway3Desc: "Projects, tasks, and work connecting freelancers with companies",
     enterMarket: "Enter Market",
 
     // Why Choose OSDM
