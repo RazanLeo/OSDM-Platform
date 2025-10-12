@@ -13,20 +13,22 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params
   return {
-    title: `${params.locale === 'ar' ? 'إضافة خدمة جديدة' : 'Add New Service'} - OSDM`,
+    title: `${locale === 'ar' ? 'إضافة خدمة جديدة' : 'Add New Service'} - OSDM`,
     description:
-      params.locale === 'ar'
+      locale === 'ar'
         ? 'قم بإضافة خدمة جديدة إلى سوق الخدمات'
         : 'Add a new service to the services marketplace'
   }
 }
 
 export default async function AddServicePage({ params }: Props) {
+  const { locale } = await params
   const session = await getServerSession(authOptions)
 
   if (!session?.user) {
-    redirect(`/${params.locale}/login?callbackUrl=/dashboard/seller/services/new`)
+    redirect(`/${locale}/login?callbackUrl=/dashboard/seller/services/new`)
   }
 
   // Check if user has active subscription
@@ -49,10 +51,10 @@ export default async function AddServicePage({ params }: Props) {
       <div className="container max-w-2xl py-12">
         <div className="bg-destructive/10 border border-destructive rounded-lg p-6 text-center">
           <h2 className="text-xl font-bold text-destructive mb-2">
-            {params.locale === 'ar' ? 'اشتراك غير نشط' : 'No Active Subscription'}
+            {locale === 'ar' ? 'اشتراك غير نشط' : 'No Active Subscription'}
           </h2>
           <p className="text-muted-foreground mb-4">
-            {params.locale === 'ar'
+            {locale === 'ar'
               ? 'يجب أن يكون لديك اشتراك نشط لإضافة خدمات'
               : 'You need an active subscription to add services'}
           </p>
@@ -66,22 +68,22 @@ export default async function AddServicePage({ params }: Props) {
     orderBy: { nameEn: 'asc' }
   })
 
-  const dict = await getDictionary(params.locale)
+  const dict = await getDictionary(locale)
 
   return (
     <div className="container max-w-5xl py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
-          {params.locale === 'ar' ? 'إضافة خدمة جديدة' : 'Add New Service'}
+          {locale === 'ar' ? 'إضافة خدمة جديدة' : 'Add New Service'}
         </h1>
         <p className="text-muted-foreground">
-          {params.locale === 'ar'
+          {locale === 'ar'
             ? 'قم بإنشاء خدمة جديدة مع 3 باقات مختلفة'
             : 'Create a new service with 3 different packages'}
         </p>
       </div>
 
-      <AddServiceForm categories={categories} locale={params.locale} dict={dict} />
+      <AddServiceForm categories={categories} locale={locale} dict={dict} />
     </div>
   )
 }

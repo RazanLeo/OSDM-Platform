@@ -13,20 +13,22 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params
   return {
-    title: `${params.locale === 'ar' ? 'إضافة مشروع جديد' : 'Add New Project'} - OSDM`,
+    title: `${locale === 'ar' ? 'إضافة مشروع جديد' : 'Add New Project'} - OSDM`,
     description:
-      params.locale === 'ar'
+      locale === 'ar'
         ? 'قم بإضافة مشروع جديد للحصول على عروض من المستقلين'
         : 'Add a new project to receive proposals from freelancers'
   }
 }
 
 export default async function AddProjectPage({ params }: Props) {
+  const { locale } = await params
   const session = await getServerSession(authOptions)
 
   if (!session?.user) {
-    redirect(`/${params.locale}/login?callbackUrl=/dashboard/buyer/projects/new`)
+    redirect(`/${locale}/login?callbackUrl=/dashboard/buyer/projects/new`)
   }
 
   // Fetch project categories
@@ -39,16 +41,16 @@ export default async function AddProjectPage({ params }: Props) {
     orderBy: { nameEn: 'asc' }
   })
 
-  const dict = await getDictionary(params.locale)
+  const dict = await getDictionary(locale)
 
   return (
     <div className="container max-w-5xl py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
-          {params.locale === 'ar' ? 'إضافة مشروع جديد' : 'Add New Project'}
+          {locale === 'ar' ? 'إضافة مشروع جديد' : 'Add New Project'}
         </h1>
         <p className="text-muted-foreground">
-          {params.locale === 'ar'
+          {locale === 'ar'
             ? 'قم بنشر مشروعك واحصل على عروض من المستقلين المحترفين'
             : 'Post your project and receive proposals from professional freelancers'}
         </p>
@@ -57,7 +59,7 @@ export default async function AddProjectPage({ params }: Props) {
       <AddProjectForm
         categories={categories}
         skills={skills}
-        locale={params.locale}
+        locale={locale}
         dict={dict}
       />
     </div>

@@ -14,7 +14,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const dict = await getDictionary(params.locale)
+  const { locale } = await params
+  const dict = await getDictionary(locale)
   return {
     title: `${dict.checkout.title} - OSDM`,
     description: dict.checkout.description
@@ -22,15 +23,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ServiceCheckoutPage({ params }: Props) {
+  const { locale, id } = await params
   const session = await getServerSession(authOptions)
 
   if (!session?.user) {
-    redirect(`/${params.locale}/login?callbackUrl=/checkout/service/${params.id}`)
+    redirect(`/${locale}/login?callbackUrl=/checkout/service/${id}`)
   }
 
   // Fetch service with packages
   const service = await prisma.service.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       seller: {
         select: {
@@ -66,10 +68,10 @@ export default async function ServiceCheckoutPage({ params }: Props) {
       <div className="container max-w-2xl py-12">
         <div className="bg-destructive/10 border border-destructive rounded-lg p-6 text-center">
           <h2 className="text-xl font-bold text-destructive mb-2">
-            {params.locale === 'ar' ? 'الخدمة غير متاحة' : 'Service Not Available'}
+            {locale === 'ar' ? 'الخدمة غير متاحة' : 'Service Not Available'}
           </h2>
           <p className="text-muted-foreground">
-            {params.locale === 'ar'
+            {locale === 'ar'
               ? 'هذه الخدمة غير متاحة حالياً للشراء'
               : 'This service is not available for purchase at this time'}
           </p>
@@ -84,10 +86,10 @@ export default async function ServiceCheckoutPage({ params }: Props) {
       <div className="container max-w-2xl py-12">
         <div className="bg-destructive/10 border border-destructive rounded-lg p-6 text-center">
           <h2 className="text-xl font-bold text-destructive mb-2">
-            {params.locale === 'ar' ? 'خطأ' : 'Error'}
+            {locale === 'ar' ? 'خطأ' : 'Error'}
           </h2>
           <p className="text-muted-foreground">
-            {params.locale === 'ar'
+            {locale === 'ar'
               ? 'لا يمكنك شراء خدمتك الخاصة'
               : 'You cannot purchase your own service'}
           </p>
@@ -96,8 +98,8 @@ export default async function ServiceCheckoutPage({ params }: Props) {
     )
   }
 
-  const dict = await getDictionary(params.locale)
-  const isArabic = params.locale === 'ar'
+  const dict = await getDictionary(locale)
+  const isArabic = locale === 'ar'
 
   return (
     <div className="container max-w-6xl py-8">
@@ -116,7 +118,7 @@ export default async function ServiceCheckoutPage({ params }: Props) {
         service={service}
         packages={service.packages}
         buyerId={session.user.id}
-        locale={params.locale}
+        locale={locale}
         dict={dict}
       />
     </div>

@@ -22,9 +22,9 @@ import { ar, enUS } from "date-fns/locale"
 function MessagesPageContent() {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const params = useParams()
+  const params = useParams<{ locale: string }>()
   const searchParams = useSearchParams()
-  const locale = params.locale as string
+  const locale = params?.locale || "ar"
   const isArabic = locale === "ar"
 
   const [loading, setLoading] = useState(true)
