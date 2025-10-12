@@ -107,6 +107,14 @@ BLOB_READ_WRITE_TOKEN="your_vercel_blob_token"
 
 ## Credentials للاختبار Test Accounts
 
+**IMPORTANT:** Before testing, you MUST run the database seed command:
+
+```bash
+npx tsx prisma/seed.ts
+```
+
+This will create all test accounts with correct passwords:
+
 ```
 Admin:
 Email: admin@osdm.sa
@@ -121,9 +129,20 @@ Email: razan@osdm.sa
 Password: RazanOSDM@056300
 ```
 
+The seed script creates:
+- ✅ 310 Product Categories (المنتجات الرقمية الجاهزة)
+- ✅ 110 Service Categories (الخدمات الرقمية المتخصصة حسب الطلب)
+- ✅ 51 Project Categories (فرص العمل الرقمي الحر عن بعد)
+- ✅ 3 Test Users with correct passwords
+- ✅ Wallets for all users
+- ✅ Revenue settings (25% + 5%)
+
 ## الميزات المنفذة Implemented Features
 
-✅ 3 أسواق رقمية (Products, Services, Projects)
+✅ 3 أسواق رقمية بالأسماء الصحيحة:
+   - المنتجات الرقمية الجاهزة (Ready Made Digital Products)
+   - الخدمات الرقمية المتخصصة حسب الطلب (Custom Digital Products & Services by Order)
+   - فرص العمل الرقمي الحر عن بعد (Remote Work Opportunities for Freelancers)
 ✅ 7 لوحات تحكم (Main + 3 Seller + 3 Buyer)
 ✅ نظام المصادقة الكامل
 ✅ نظام الدفع (معطّل مؤقتاً حتى إضافة API Keys)
