@@ -36,10 +36,10 @@ import { ar, enUS } from "date-fns/locale"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface ProjectPageProps {
-  params: {
+  params: Promise<{
     locale: string
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: ProjectPageProps): Promise<Metadata> {
@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: ProjectPageProps): Promise<Me
 }
 
 export default async function ProjectDetailPage({ params }: ProjectPageProps) {
-  const { locale, slug } = params
+  const { locale, slug } = await params
   const isArabic = locale === "ar"
   const session = await getServerSession(authOptions)
 

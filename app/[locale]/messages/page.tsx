@@ -1,7 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,7 +19,7 @@ import { useParams } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { ar, enUS } from "date-fns/locale"
 
-export default function MessagesPage() {
+function MessagesPageContent() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const params = useParams()
@@ -338,5 +341,18 @@ export default function MessagesPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    }>
+      <MessagesPageContent />
+    </Suspense>
   )
 }

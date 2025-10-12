@@ -16,14 +16,14 @@ export const metadata: Metadata = {
     "منصة سعودية رقمية شاملة للمنتجات والخدمات وفرص العمل الرقمية | Saudi comprehensive digital marketplace for products, services, and freelance opportunities",
 }
 
-export default function LocaleLayout({
+export default async function LocaleLayout({
   children,
   params,
 }: {
   children: React.ReactNode
-  params: { locale: Locale }
+  params: Promise<{ locale: Locale }>
 }) {
-  const { locale } = params
+  const { locale } = await params
   const dir = locale === "ar" ? "rtl" : "ltr"
 
   return (

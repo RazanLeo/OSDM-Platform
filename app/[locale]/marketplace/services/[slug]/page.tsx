@@ -34,10 +34,10 @@ import { formatDistanceToNow } from "date-fns"
 import { ar, enUS } from "date-fns/locale"
 
 interface ServicePageProps {
-  params: {
+  params: Promise<{
     locale: string
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: ServicePageProps): Promise<Metadata> {
@@ -67,7 +67,7 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
 }
 
 export default async function ServiceDetailPage({ params }: ServicePageProps) {
-  const { locale, slug } = params
+  const { locale, slug } = await params
   const isArabic = locale === "ar"
   const session = await getServerSession(authOptions)
 

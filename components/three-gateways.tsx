@@ -20,14 +20,14 @@ export async function ThreeGateways({ locale }: { locale: Locale }) {
       icon: Wrench,
       title: t.gateway2Title,
       description: t.gateway2Desc,
-      href: `/${locale}/marketplace/custom-services`,
+      href: `/${locale}/marketplace/services`,
       gradient: "from-[#4691A9] to-[#89A58F]",
     },
     {
       icon: Briefcase,
       title: t.gateway3Title,
       description: t.gateway3Desc,
-      href: `/${locale}/marketplace/freelance-jobs`,
+      href: `/${locale}/marketplace/projects`,
       gradient: "from-[#89A58F] to-[#846F9C]",
     },
   ]

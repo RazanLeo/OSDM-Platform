@@ -27,14 +27,14 @@ import ProjectProposals from '@/components/projects/ProjectProposals'
 import ShareButton from '@/components/products/ShareButton'
 
 interface ProjectPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: ProjectPageProps): Promise<Metadata> {
   const project = await prisma.project.findUnique({
-    where: { slug: params.slug },
+    where: { slug: (await params).slug },
     include: { client: { select: { fullName: true } } }
   })
 
@@ -55,7 +55,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
 
   const project = await prisma.project.findUnique({
     where: {
-      slug: params.slug
+      slug: (await params).slug
     },
     include: {
       client: {

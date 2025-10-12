@@ -4,8 +4,8 @@ import { ThreeGateways } from "@/components/three-gateways"
 import { WhyChooseOSDM } from "@/components/why-choose-osdm"
 import { WhatYouNeed } from "@/components/what-you-need"
 
-export default function HomePage({ params }: { params: { locale: Locale } }) {
-  const { locale } = params
+export default async function HomePage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params
 
   return (
     <>

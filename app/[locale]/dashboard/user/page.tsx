@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n/config"
 
-export default function UserDashboard({ params }: { params: { locale: Locale } }) {
+export default function UserDashboard({ params }: { params: Promise<{ locale: Locale }> }) {
   return (
     <div className="container mx-auto px-4 py-20">
       <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-[#846F9C] via-[#4691A9] to-[#89A58F] bg-clip-text text-transparent">

@@ -4,12 +4,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { prisma } from '@/lib/prisma'
 import { AddServiceForm } from '@/components/forms/add-service-form'
-import { getDictionary } from '@/lib/dictionaries'
+import { getDictionary } from '@/lib/i18n/get-dictionary'
 
 interface Props {
-  params: {
+  params: Promise<{
     locale: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

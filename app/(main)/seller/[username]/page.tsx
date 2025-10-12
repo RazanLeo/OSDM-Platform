@@ -30,14 +30,14 @@ import { ar } from 'date-fns/locale'
 import ShareButton from '@/components/products/ShareButton'
 
 interface SellerProfilePageProps {
-  params: {
+  params: Promise<{
     username: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: SellerProfilePageProps): Promise<Metadata> {
   const seller = await prisma.user.findUnique({
-    where: { username: params.username }
+    where: { username: (await params).username }
   })
 
   if (!seller) {
@@ -57,7 +57,7 @@ export default async function SellerProfilePage({ params }: SellerProfilePagePro
 
   const seller = await prisma.user.findUnique({
     where: {
-      username: params.username
+      username: (await params).username
     },
     include: {
       readyProducts: {

@@ -32,15 +32,15 @@ import ProductReviews from '@/components/products/ProductReviews'
 import RelatedProducts from '@/components/products/RelatedProducts'
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const product = await prisma.readyProduct.findUnique({
-    where: { slug: params.slug },
+    where: { slug: (await params).slug },
     include: { seller: { select: { fullName: true, username: true } } }
   })
 
@@ -67,7 +67,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   // Fetch product with all related data
   const product = await prisma.readyProduct.findUnique({
     where: {
-      slug: params.slug,
+      slug: (await params).slug,
       status: 'PUBLISHED' // Only show published products
     },
     include: {

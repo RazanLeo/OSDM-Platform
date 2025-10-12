@@ -6,9 +6,9 @@ import type { Locale } from "@/lib/i18n/config"
 import { getDictionary } from "@/lib/i18n/get-dictionary"
 import { SellerProductsDashboard } from "@/components/dashboard/seller-products-dashboard"
 
-export default async function SellerProductsPage({ params }: { params: { locale: Locale } }) {
+export default async function SellerProductsPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const session = await getServerSession(authOptions)
-  const locale = params.locale
+  const locale = (await params).locale
   const t = getDictionary(locale)
 
   if (!session) {

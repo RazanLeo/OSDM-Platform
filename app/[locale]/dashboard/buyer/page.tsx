@@ -73,7 +73,7 @@ async function getFavorites() {
 export default async function BuyerDashboardPage({
   params,
 }: {
-  params: { locale: Locale }
+  params: Promise<{ locale: Locale }>
 }) {
   const session = await getServerSession(authOptions)
 

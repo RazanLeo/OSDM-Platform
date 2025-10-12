@@ -37,24 +37,25 @@ import { formatDistanceToNow } from "date-fns"
 import { ar, enUS } from "date-fns/locale"
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     locale: string
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { locale, slug } = await params
   const product = await prisma.product.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
   })
 
   if (!product) {
     return {
-      title: params.locale === "ar" ? "المنتج غير موجود - OSDM" : "Product Not Found - OSDM",
+      title: locale === "ar" ? "المنتج غير موجود - OSDM" : "Product Not Found - OSDM",
     }
   }
 
-  const isArabic = params.locale === "ar"
+  const isArabic = locale === "ar"
   const title = isArabic ? product.titleAr : product.titleEn
   const description = isArabic ? product.descriptionAr : product.descriptionEn
 
@@ -70,7 +71,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
-  const { locale, slug } = params
+  const { locale, slug } = await params
   const isArabic = locale === "ar"
   const session = await getServerSession(authOptions)
 

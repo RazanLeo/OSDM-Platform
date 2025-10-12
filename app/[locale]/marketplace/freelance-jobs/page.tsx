@@ -7,9 +7,9 @@ import { FreelanceJobsClient } from "./client"
 export async function generateMetadata({
   params,
 }: {
-  params: { locale: Locale }
+  params: Promise<{ locale: Locale }>
 }): Promise<Metadata> {
-  const { locale } = params
+  const { locale } = await params
   const t = getDictionary(locale)
 
   return {
@@ -18,14 +18,14 @@ export async function generateMetadata({
   }
 }
 
-export default function FreelanceJobsPage({
+export default async function FreelanceJobsPage({
   params,
   searchParams,
 }: {
-  params: { locale: Locale }
+  params: Promise<{ locale: Locale }>
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
-  const { locale } = params
+  const { locale } = await params
   const t = getDictionary(locale)
 
   return (

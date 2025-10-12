@@ -10,9 +10,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 const ITEMS_PER_PAGE = 24
 
 interface PageProps {
-  params: {
+  params: Promise<{
     locale: string
-  }
+  }>
   searchParams: {
     category?: string
     search?: string
@@ -22,7 +22,7 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { locale } = params
+  const { locale } = await params
   const isArabic = locale === "ar"
 
   return {
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ServicesPage({ params, searchParams }: PageProps) {
-  const { locale } = params
+  const { locale } = await params
   const isArabic = locale === "ar"
 
   // Parse search params

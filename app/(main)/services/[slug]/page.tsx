@@ -28,14 +28,14 @@ import RelatedServices from '@/components/services/RelatedServices'
 import ShareButton from '@/components/products/ShareButton'
 
 interface ServicePageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: ServicePageProps): Promise<Metadata> {
   const service = await prisma.customService.findUnique({
-    where: { slug: params.slug },
+    where: { slug: (await params).slug },
     include: { seller: { select: { fullName: true, username: true } } }
   })
 
@@ -61,7 +61,7 @@ export default async function ServiceDetailPage({ params }: ServicePageProps) {
 
   const service = await prisma.customService.findUnique({
     where: {
-      slug: params.slug,
+      slug: (await params).slug,
       status: 'PUBLISHED'
     },
     include: {

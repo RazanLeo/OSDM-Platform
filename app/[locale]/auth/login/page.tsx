@@ -4,8 +4,8 @@ import { getDictionary } from "@/lib/i18n/get-dictionary"
 import { LoginForm } from "@/components/auth/LoginForm"
 import { Loader2 } from "lucide-react"
 
-export default function LoginPage({ params }: { params: { locale: Locale } }) {
-  const locale = params.locale
+export default async function LoginPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params
   const t = getDictionary(locale)
 
   return (
