@@ -51,6 +51,7 @@ model Contract {
   Escrow                           Escrow?
   Milestone                        Milestone[]
   Payment                          Payment?
+  TimeEntry                        TimeEntry[]
 
   @@index([clientId])
   @@index([freelancerId])
@@ -470,9 +471,10 @@ model Service {
   updatedAt       DateTime
   publishedAt     DateTime?
   ServiceCategory ServiceCategory  @relation(fields: [categoryId], references: [id])
-  User            User             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  ServiceOrder    ServiceOrder[]
-  ServicePackage  ServicePackage[]
+  User                User             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  ServiceOrder        ServiceOrder[]
+  ServicePackage      ServicePackage[]
+  ServiceRequirement  ServiceRequirement[]
 
   @@index([categoryId])
   @@index([sellerId])
@@ -543,6 +545,8 @@ model ServiceOrder {
   Escrow                           Escrow?
   Payment                          Payment?
   ServiceMilestone                 ServiceMilestone[]
+  OrderRequirement                 OrderRequirement[]
+  Delivery                         Delivery[]
   User_ServiceOrder_buyerIdToUser  User               @relation("ServiceOrder_buyerIdToUser", fields: [buyerId], references: [id])
   User_ServiceOrder_sellerIdToUser User               @relation("ServiceOrder_sellerIdToUser", fields: [sellerId], references: [id])
   Service                          Service            @relation(fields: [serviceId], references: [id])
@@ -665,6 +669,13 @@ model User {
   Withdrawal                                   Withdrawal[]
   Affiliate                                    Affiliate[]
   PromotedListing                              PromotedListing[]
+  TimeEntry                                    TimeEntry[]
+  Connect                                      Connect[]
+  Portfolio                                    Portfolio[]
+  Subscription_Product                         Subscription_Product[]
+  BuyerRequest                                 BuyerRequest[]
+  Delivery                                     Delivery[]
+  SellerBadge                                  SellerBadge[]
 
   @@index([email])
   @@index([role])
@@ -843,6 +854,199 @@ enum PackageTier {
   BASIC
   STANDARD
   PREMIUM
+}
+
+enum ConnectType {
+  FREE
+  PURCHASED
+  BONUS
+}
+
+model TimeEntry {
+  id              String   @id
+  contractId      String
+  freelancerId    String
+  hours           Decimal  @db.Decimal(5, 2)
+  description     String
+  date            DateTime
+  screenshots     String[]
+  isApproved      Boolean  @default(false)
+  approvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  Contract        Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  User            User     @relation(fields: [freelancerId], references: [id])
+
+  @@index([contractId])
+  @@index([freelancerId])
+  @@index([date])
+}
+
+model Connect {
+  id          String      @id
+  userId      String
+  amount      Int
+  type        ConnectType
+  usedFor     String?
+  projectId   String?
+  purchasedAt DateTime?
+  usedAt      DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime    @default(now())
+  User        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+}
+
+model Portfolio {
+  id              String   @id
+  userId          String
+  titleAr         String
+  titleEn         String
+  descriptionAr   String
+  descriptionEn   String
+  images          String[]
+  attachments     String[]
+  link            String?
+  skills          String[]
+  completionDate  DateTime?
+  clientName      String?
+  isPublished     Boolean  @default(true)
+  viewCount       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isPublished])
+}
+
+model License {
+  id              String   @id
+  productId       String
+  orderId         String
+  licenseKey      String   @unique
+  buyerEmail      String
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  maxActivations  Int      @default(1)
+  activationCount Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([productId])
+  @@index([orderId])
+  @@index([licenseKey])
+  @@index([buyerEmail])
+}
+
+model Subscription_Product {
+  id              String   @id
+  productId       String
+  subscriberId    String
+  plan            String
+  status          String   @default("ACTIVE")
+  amount          Decimal  @db.Decimal(10, 2)
+  billingCycle    String
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean @default(false)
+  canceledAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([subscriberId])
+  @@index([status])
+}
+
+model BuyerRequest {
+  id              String   @id
+  buyerId         String
+  titleAr         String
+  titleEn         String
+  descriptionAr   String
+  descriptionEn   String
+  categoryId      String
+  budget          Decimal  @db.Decimal(10, 2)
+  deadline        DateTime
+  skills          String[]
+  offerCount      Int      @default(0)
+  status          String   @default("OPEN")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  expiresAt       DateTime
+  User            User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@index([buyerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model ServiceRequirement {
+  id              String   @id
+  serviceId       String
+  questionAr      String
+  questionEn      String
+  type            String
+  isRequired      Boolean  @default(true)
+  options         String[]
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  Service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+}
+
+model OrderRequirement {
+  id              String        @id
+  serviceOrderId  String
+  requirementId   String
+  questionAr      String
+  questionEn      String
+  answer          String
+  createdAt       DateTime      @default(now())
+  ServiceOrder    ServiceOrder  @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+
+  @@index([serviceOrderId])
+}
+
+model Delivery {
+  id              String        @id
+  serviceOrderId  String
+  sellerId        String
+  message         String
+  files           String[]
+  deliveredAt     DateTime      @default(now())
+  isAccepted      Boolean?
+  feedback        String?
+  respondedAt     DateTime?
+  revisionNumber  Int           @default(0)
+  ServiceOrder    ServiceOrder  @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  User            User          @relation(fields: [sellerId], references: [id])
+
+  @@index([serviceOrderId])
+  @@index([sellerId])
+}
+
+model SellerBadge {
+  id              String   @id
+  userId          String
+  badgeType       String
+  nameAr          String
+  nameEn          String
+  descriptionAr   String
+  descriptionEn   String
+  icon            String
+  earnedAt        DateTime @default(now())
+  expiresAt       DateTime?
+  isActive        Boolean  @default(true)
+  User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([badgeType])
 }
 
 model Affiliate {
