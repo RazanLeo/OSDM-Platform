@@ -193,7 +193,15 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-3xl mb-4">{title}</CardTitle>
+                  <div className="flex items-start gap-3 mb-4">
+                    <CardTitle className="text-3xl flex-1">{title}</CardTitle>
+                    {project.isZeroFee && (
+                      <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 text-lg px-4 py-2">
+                        <DollarSign className="h-5 w-5 mr-2" />
+                        {isArabic ? "🎉 بدون عمولة - Bahr" : "🎉 Zero Fee - Bahr"}
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     <Badge variant="secondary">
                       <Briefcase className="h-3 w-3 mr-1" />
@@ -209,6 +217,13 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
                       <Users className="h-3 w-3 mr-1" />
                       {project._count.Proposal} {isArabic ? "عرض" : "proposals"}
                     </Badge>
+                    {project.experienceLevel && (
+                      <Badge className="bg-purple-600">
+                        {project.experienceLevel === "EXPERT" ? (isArabic ? "خبير" : "Expert") :
+                         project.experienceLevel === "INTERMEDIATE" ? (isArabic ? "متوسط" : "Intermediate") :
+                         (isArabic ? "مبتدئ" : "Entry Level")}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -336,14 +351,27 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           {canSubmitProposal ? (
             <Card>
               <CardHeader>
-                <CardTitle>{isArabic ? "تقديم عرض" : "Submit Proposal"}</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>{isArabic ? "تقديم عرض" : "Submit Proposal"}</span>
+                  <Badge className="bg-gradient-to-r from-blue-600 to-cyan-600">
+                    {isArabic ? "يكلف: 2 كونكتس - Upwork" : "Costs: 2 Connects - Upwork"}
+                  </Badge>
+                </CardTitle>
                 <CardDescription>
                   {isArabic
-                    ? "قدم عرضك لهذا المشروع واشرح كيف ستنجزه"
-                    : "Submit your proposal and explain how you'll complete this project"}
+                    ? "قدم عرضك لهذا المشروع واشرح كيف ستنجزه (يتطلب كونكتس حسب نظام Upwork)"
+                    : "Submit your proposal and explain how you'll complete this project (requires Connects as per Upwork system)"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <Alert className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {isArabic
+                      ? "💡 نظام Upwork Connects: كل عرض يكلف 2 كونكتس. يمكنك شراء المزيد من الكونكتس من لوحة التحكم"
+                      : "💡 Upwork Connects System: Each proposal costs 2 connects. You can buy more connects from your dashboard"}
+                  </AlertDescription>
+                </Alert>
                 <form action={`/${locale}/api/proposals`} method="POST" className="space-y-6">
                   <input type="hidden" name="projectId" value={project.id} />
 
@@ -444,54 +472,105 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {isArabic ? "العروض المقدمة" : "Submitted Proposals"} (
+                  {isArabic ? "العروض المقدمة - Upwork Proposals" : "Submitted Proposals - Upwork Style"} (
                   {project._count.Proposal})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {project.Proposal.map((proposal) => (
-                    <div key={proposal.id} className="p-4 border rounded-lg">
-                      <div className="flex items-start gap-4">
-                        <Avatar>
-                          <AvatarImage src={proposal.User.avatar || undefined} />
-                          <AvatarFallback>{proposal.User.fullName[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <Link
-                                href={`/${locale}/seller/${proposal.User.username}`}
-                                className="font-semibold hover:underline"
-                              >
-                                {proposal.User.fullName}
-                              </Link>
-                              <p className="text-sm text-muted-foreground">
-                                @{proposal.User.username}
-                              </p>
+                  {project.Proposal.map((proposal) => {
+                    // Calculate skills match percentage (Mostaql feature)
+                    const freelancerSkills = proposal.User.skills || []
+                    const projectSkills = project.skills || []
+                    const matchingSkills = freelancerSkills.filter((skill: string) =>
+                      projectSkills.includes(skill)
+                    )
+                    const matchPercentage = projectSkills.length > 0
+                      ? Math.round((matchingSkills.length / projectSkills.length) * 100)
+                      : 0
+
+                    return (
+                      <div key={proposal.id} className="p-4 border-2 rounded-lg hover:border-primary transition-colors">
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-16 w-16">
+                            <AvatarImage src={proposal.User.avatar || undefined} />
+                            <AvatarFallback>{proposal.User.fullName[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Link
+                                    href={`/${locale}/seller/${proposal.User.username}`}
+                                    className="font-bold text-lg hover:underline"
+                                  >
+                                    {proposal.User.fullName}
+                                  </Link>
+                                  {proposal.User.isVerified && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      {isArabic ? "موثق" : "Verified"}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  @{proposal.User.username}
+                                </p>
+                                {/* Mostaql Skills Matching */}
+                                {matchPercentage > 0 && (
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                                      <div
+                                        className={`h-full ${
+                                          matchPercentage >= 70 ? 'bg-green-500' :
+                                          matchPercentage >= 40 ? 'bg-yellow-500' :
+                                          'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${matchPercentage}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs font-semibold text-muted-foreground">
+                                      {matchPercentage}% {isArabic ? "تطابق المهارات" : "Skills Match"}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-primary">
+                                  {formatPrice(Number(proposal.proposedAmount))}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {proposal.deliveryDays} {isArabic ? "يوم" : "days"}
+                                </p>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-primary">
-                                {formatPrice(Number(proposal.proposedAmount))}
-                              </p>
+                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                              {proposal.coverLetter}
+                            </p>
+                            <div className="flex items-center justify-between">
                               <p className="text-xs text-muted-foreground">
-                                {proposal.deliveryDays} {isArabic ? "يوم" : "days"}
+                                {formatDistanceToNow(new Date(proposal.createdAt), {
+                                  addSuffix: true,
+                                  locale: isArabic ? ar : enUS,
+                                })}
                               </p>
+                              {isProjectOwner && (
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline">
+                                    <Star className="h-4 w-4 mr-2" />
+                                    {isArabic ? "قائمة مختصرة" : "Shortlist"}
+                                  </Button>
+                                  <Button size="sm" className="bg-gradient-to-r from-green-600 to-emerald-600">
+                                    {isArabic ? "قبول العرض" : "Accept Proposal"}
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-3">
-                            {proposal.coverLetter}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {formatDistanceToNow(new Date(proposal.createdAt), {
-                              addSuffix: true,
-                              locale: isArabic ? ar : enUS,
-                            })}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   {project._count.Proposal > 5 && (
                     <Button variant="outline" className="w-full">

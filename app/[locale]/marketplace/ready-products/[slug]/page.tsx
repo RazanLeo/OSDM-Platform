@@ -219,28 +219,75 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
             </CardContent>
           </Card>
 
-          {/* Gallery Images */}
+          {/* Picalica Preview Images Gallery */}
           {product.images && product.images.length > 0 && (
-            <div className="grid grid-cols-4 gap-4">
-              {product.images.map((image, index) => (
-                <div
-                  key={index}
-                  className="relative aspect-square rounded-lg overflow-hidden border cursor-pointer hover:border-primary transition-colors"
-                >
-                  <Image src={image} alt={`${title} - ${index + 1}`} fill className="object-cover" />
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {isArabic ? "معاينة الصور - Picalica Style" : "Preview Images - Picalica Style"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {product.images.map((image, index) => (
+                    <div
+                      key={index}
+                      className="relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer hover:border-primary transition-all hover:scale-105"
+                    >
+                      <Image src={image} alt={`${title} - ${index + 1}`} fill className="object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Eye className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Gumroad Subscription Packages */}
+          {product.packages && product.packages.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{isArabic ? "باقات الاشتراك - Gumroad" : "Subscription Packages - Gumroad"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {product.packages.map((pkg: any, index: number) => (
+                    <div key={index} className="p-4 border-2 rounded-lg hover:border-primary transition-colors">
+                      <h4 className="font-bold text-lg mb-2">{pkg.name}</h4>
+                      <p className="text-2xl font-bold text-primary mb-4">{formatPrice(pkg.price)}</p>
+                      <ul className="space-y-2 text-sm">
+                        {pkg.features?.map((feature: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button className="w-full mt-4" asChild>
+                        <Link href={`/${locale}/checkout/product/${product.id}?package=${index}`}>
+                          {isArabic ? "اشترك الآن" : "Subscribe Now"}
+                        </Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Product Details Tabs */}
           <Tabs defaultValue="description" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="description">
                 {isArabic ? "الوصف" : "Description"}
               </TabsTrigger>
               <TabsTrigger value="reviews">
                 {isArabic ? "التقييمات" : "Reviews"} ({product._count.ProductReview})
+              </TabsTrigger>
+              <TabsTrigger value="affiliate">
+                {isArabic ? "التسويق بالعمولة" : "Affiliate Program"}
               </TabsTrigger>
             </TabsList>
 
@@ -359,6 +406,62 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="affiliate" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{isArabic ? "برنامج التسويق بالعمولة - Gumroad Affiliate" : "Affiliate Program - Gumroad"}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 rounded-lg">
+                    <h3 className="font-bold text-xl mb-2">
+                      {isArabic ? "احصل على عمولة 10% لكل عملية بيع!" : "Earn 10% commission on every sale!"}
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      {isArabic
+                        ? "انضم لبرنامج التسويق بالعمولة واربح عند كل عملية بيع تتم عبر رابطك"
+                        : "Join our affiliate program and earn money for every sale through your link"}
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/marketplace/ready-products/${product.slug}?ref=YOUR_CODE`}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                      <Button variant="outline">
+                        {isArabic ? "نسخ" : "Copy"}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-4 text-center">
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-3xl font-bold text-green-600">10%</p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {isArabic ? "عمولة على كل عملية بيع" : "Commission per sale"}
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-3xl font-bold text-blue-600">30</p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {isArabic ? "يوم صلاحية الكوكيز" : "Days cookie duration"}
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-3xl font-bold text-purple-600">∞</p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {isArabic ? "عمولات غير محدودة" : "Unlimited commissions"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button className="w-full" size="lg" asChild>
+                    <Link href={`/${locale}/affiliate/join?product=${product.id}`}>
+                      {isArabic ? "انضم للبرنامج الآن" : "Join Program Now"}
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -453,6 +556,54 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                 </div>
               )}
 
+              {/* Picalica Badges */}
+              {(product.isExclusive || product.productType) && (
+                <div className="space-y-2">
+                  <Separator />
+                  <div className="flex flex-wrap gap-2">
+                    {product.isExclusive && (
+                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500">
+                        {isArabic ? "🏆 حصري" : "🏆 Exclusive"}
+                      </Badge>
+                    )}
+                    {product.productType && (
+                      <Badge variant="secondary" className="capitalize">
+                        {product.productType}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Discount Code Input */}
+              <div className="space-y-2">
+                <Separator />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder={isArabic ? "كود الخصم" : "Discount Code"}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    id="discountCode"
+                  />
+                  <Button variant="outline" type="button" onClick={() => {
+                    const code = (document.getElementById('discountCode') as HTMLInputElement)?.value
+                    if (code) {
+                      fetch(`/api/discount-codes/validate?code=${code}&productId=${product.id}`)
+                        .then(r => r.json())
+                        .then(data => {
+                          if (data.valid) {
+                            alert(isArabic ? `تم تطبيق الخصم: ${data.discount}%` : `Discount applied: ${data.discount}%`)
+                          } else {
+                            alert(isArabic ? 'كود خصم غير صالح' : 'Invalid discount code')
+                          }
+                        })
+                    }
+                  }}>
+                    {isArabic ? "تطبيق" : "Apply"}
+                  </Button>
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="space-y-3">
                 <Button className="w-full" size="lg" asChild>
@@ -461,6 +612,18 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                     {isArabic ? "شراء الآن" : "Buy Now"}
                   </Link>
                 </Button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href={`/${locale}/compare?add=${product.id}`}>
+                      {isArabic ? "مقارنة" : "Compare"}
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    <Heart className="h-4 w-4 ml-2" />
+                    {isArabic ? "مفضلة" : "Wishlist"}
+                  </Button>
+                </div>
 
                 {session?.user?.id !== product.sellerId && (
                   <Button variant="outline" className="w-full" asChild>

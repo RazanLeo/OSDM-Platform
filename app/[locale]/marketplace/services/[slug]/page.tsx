@@ -29,7 +29,11 @@ import {
   Video,
   RotateCcw,
   Zap,
+  FileText,
+  Paperclip,
+  AlertCircle,
 } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { formatDistanceToNow } from "date-fns"
 import { ar, enUS } from "date-fns/locale"
 
@@ -208,17 +212,32 @@ export default async function ServiceDetailPage({ params }: ServicePageProps) {
         <div className="space-y-4">
           <h1 className="text-3xl md:text-4xl font-bold">{title}</h1>
 
-          {/* Seller Info */}
+          {/* Seller Info with Fiverr Level Badge */}
           <Link
             href={`/${locale}/seller/${service.User.username}`}
             className="flex items-center gap-3 hover:bg-muted p-3 rounded-lg transition-colors w-fit"
           >
-            <Avatar>
+            <Avatar className="h-16 w-16">
               <AvatarImage src={service.User.avatar || undefined} />
               <AvatarFallback>{service.User.fullName[0]}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold">{service.User.fullName}</p>
+              <p className="font-semibold flex items-center gap-2">
+                {service.User.fullName}
+                {service.User.sellerLevel && (
+                  <Badge className={
+                    service.User.sellerLevel === "TOP_RATED" ? "bg-gradient-to-r from-yellow-500 to-orange-500" :
+                    service.User.sellerLevel === "LEVEL_2" ? "bg-gradient-to-r from-blue-500 to-purple-500" :
+                    service.User.sellerLevel === "LEVEL_1" ? "bg-gradient-to-r from-green-500 to-teal-500" :
+                    "bg-gray-500"
+                  }>
+                    {service.User.sellerLevel === "TOP_RATED" ? "⭐ TOP RATED" :
+                     service.User.sellerLevel === "LEVEL_2" ? "L2" :
+                     service.User.sellerLevel === "LEVEL_1" ? "L1" :
+                     "NEW"}
+                  </Badge>
+                )}
+              </p>
               <p className="text-sm text-muted-foreground">@{service.User.username}</p>
             </div>
           </Link>
@@ -268,14 +287,28 @@ export default async function ServiceDetailPage({ params }: ServicePageProps) {
           </div>
         </div>
 
-        {/* Right - Main Image/Video */}
+        {/* Right - Seller Video Intro (Fiverr Feature) */}
         <div className="space-y-4">
           <Card>
             <CardContent className="p-0">
               <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                 {service.videoUrl ? (
+                  <div className="relative w-full h-full group cursor-pointer">
+                    <video
+                      src={service.videoUrl}
+                      className="w-full h-full object-cover"
+                      controls
+                      poster={service.thumbnail}
+                    />
+                    <div className="absolute top-4 left-4">
+                      <Badge className="bg-gradient-to-r from-fuchsia-600 to-pink-600">
+                        <Video className="h-3 w-3 mr-1" />
+                        {isArabic ? "فيديو البائع" : "Seller's Video"}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : (
                   <div className="relative w-full h-full">
-                    <Video className="absolute inset-0 m-auto h-16 w-16 text-white z-10 cursor-pointer" />
                     <Image
                       src={service.thumbnail}
                       alt={title}
@@ -283,15 +316,8 @@ export default async function ServiceDetailPage({ params }: ServicePageProps) {
                       className="object-cover"
                       priority
                     />
+                    <div className="absolute inset-0 bg-black/20" />
                   </div>
-                ) : (
-                  <Image
-                    src={service.thumbnail}
-                    alt={title}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
                 )}
               </div>
             </CardContent>
@@ -471,13 +497,43 @@ export default async function ServiceDetailPage({ params }: ServicePageProps) {
         </div>
       </div>
 
+      {/* Gig Extras - Fiverr Feature */}
+      <div className="mb-12">
+        <h2 className="text-2xl font-bold mb-6">
+          {isArabic ? "إضافات الخدمة - Fiverr Gig Extras" : "Gig Extras - Fiverr Style"}
+        </h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { name: isArabic ? "تسليم سريع (24 ساعة)" : "Fast Delivery (24 hours)", price: 100, icon: Zap },
+            { name: isArabic ? "مراجعات إضافية" : "Extra Revisions", price: 50, icon: RotateCcw },
+            { name: isArabic ? "ملفات المصدر" : "Source Files", price: 150, icon: FileText },
+          ].map((extra, index) => (
+            <Card key={index} className="hover:border-primary transition-colors cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <extra.icon className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">{extra.name}</h4>
+                  </div>
+                  <input type="checkbox" className="h-5 w-5" />
+                </div>
+                <p className="text-lg font-bold text-primary">+{formatPrice(extra.price)}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
       {/* Service Details */}
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Tabs defaultValue="description" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="description">
                 {isArabic ? "الوصف" : "Description"}
+              </TabsTrigger>
+              <TabsTrigger value="requirements">
+                {isArabic ? "متطلبات الخدمة" : "Requirements"}
               </TabsTrigger>
               <TabsTrigger value="seller">
                 {isArabic ? "معلومات البائع" : "About Seller"}
@@ -495,6 +551,61 @@ export default async function ServiceDetailPage({ params }: ServicePageProps) {
                       {description}
                     </p>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="requirements" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{isArabic ? "متطلبات الخدمة - Buyer Requirements" : "Service Requirements - Fiverr Style"}</CardTitle>
+                  <CardDescription>
+                    {isArabic
+                      ? "يرجى تقديم هذه المعلومات عند طلب الخدمة"
+                      : "Please provide this information when ordering the service"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        {isArabic ? "1. وصف المشروع بالتفصيل" : "1. Detailed Project Description"}
+                      </label>
+                      <textarea
+                        className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        placeholder={isArabic ? "اشرح مشروعك بالتفصيل..." : "Describe your project in detail..."}
+                        disabled
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        {isArabic ? "2. الملفات المطلوبة (لوجو، صور، نصوص)" : "2. Required Files (logo, images, text)"}
+                      </label>
+                      <div className="border-2 border-dashed border-input rounded-lg p-8 text-center text-muted-foreground">
+                        <Paperclip className="h-8 w-8 mx-auto mb-2" />
+                        <p className="text-sm">{isArabic ? "سيتم رفع الملفات عند الطلب" : "Files will be uploaded when ordering"}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        {isArabic ? "3. الألوان المفضلة" : "3. Preferred Colors"}
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        placeholder={isArabic ? "مثال: #FF5733, أزرق، أخضر" : "e.g., #FF5733, Blue, Green"}
+                        disabled
+                      />
+                    </div>
+                  </div>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {isArabic
+                        ? "ستتمكن من ملء هذه المتطلبات بعد اختيار الباقة والانتقال لصفحة الدفع"
+                        : "You'll be able to fill these requirements after selecting a package and proceeding to checkout"}
+                    </AlertDescription>
+                  </Alert>
                 </CardContent>
               </Card>
             </TabsContent>
