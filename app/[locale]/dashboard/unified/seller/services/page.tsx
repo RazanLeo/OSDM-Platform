@@ -28,6 +28,11 @@ import {
   Video,
   Award,
   Zap,
+  FolderOpen,
+  Image as ImageIcon,
+  Trash2,
+  Eye,
+  Edit,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -38,6 +43,7 @@ export default function SellerServicesDashboard() {
   const [analytics, setAnalytics] = useState<any>(null)
   const [services, setServices] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
+  const [portfolio, setPortfolio] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -46,19 +52,33 @@ export default function SellerServicesDashboard() {
 
   const loadData = async () => {
     try {
-      const [analyticsRes, servicesRes, ordersRes] = await Promise.all([
+      const [analyticsRes, servicesRes, ordersRes, portfolioRes] = await Promise.all([
         fetch("/api/analytics/seller/services").then(r => r.json()),
         fetch("/api/services?sellerId=me").then(r => r.json()),
         fetch("/api/service-orders?sellerId=me").then(r => r.json()),
+        fetch("/api/portfolio").then(r => r.json()),
       ])
 
       setAnalytics(analyticsRes)
       setServices(servicesRes.services || [])
       setOrders(ordersRes.orders || [])
+      setPortfolio(portfolioRes.portfolios || [])
     } catch (error) {
       console.error("Failed to load data:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const deletePortfolioItem = async (id: string) => {
+    if (!confirm(isArabic ? "هل أنت متأكد من الحذف؟" : "Are you sure you want to delete?")) {
+      return
+    }
+    try {
+      await fetch(`/api/portfolio/${id}`, { method: "DELETE" })
+      setPortfolio(portfolio.filter(p => p.id !== id))
+    } catch (error) {
+      console.error("Failed to delete portfolio:", error)
     }
   }
 
@@ -190,7 +210,7 @@ export default function SellerServicesDashboard() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="services" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="services">
             <Briefcase className="h-4 w-4 mr-2" />
             {isArabic ? "خدماتي" : "My Gigs"}
@@ -198,6 +218,10 @@ export default function SellerServicesDashboard() {
           <TabsTrigger value="orders">
             <Package className="h-4 w-4 mr-2" />
             {isArabic ? "الطلبات" : "Orders"}
+          </TabsTrigger>
+          <TabsTrigger value="portfolio">
+            <FolderOpen className="h-4 w-4 mr-2" />
+            {isArabic ? "معرض الأعمال" : "Portfolio"}
           </TabsTrigger>
           <TabsTrigger value="buyer-requests">
             <MessageSquare className="h-4 w-4 mr-2" />
@@ -339,6 +363,120 @@ export default function SellerServicesDashboard() {
                   {isArabic ? "لا توجد طلبات حالياً" : "No orders currently"}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Portfolio Tab */}
+        <TabsContent value="portfolio" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5 text-purple-600" />
+                    {isArabic ? "معرض أعمالي - Portfolio Gallery" : "Portfolio Gallery - My Work"}
+                  </CardTitle>
+                  <CardDescription>
+                    {isArabic
+                      ? "اعرض مشاريعك وأعمالك المنجزة للمشترين المحتملين"
+                      : "Showcase your completed projects and work to potential buyers"}
+                  </CardDescription>
+                </div>
+                <Button className="bg-gradient-to-r from-purple-600 to-fuchsia-600">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isArabic ? "إضافة مشروع" : "Add Project"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {portfolio.length === 0 ? (
+                <div className="text-center py-12">
+                  <FolderOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    {isArabic ? "لا توجد أعمال في معرضك بعد" : "No portfolio items yet"}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {isArabic
+                      ? "ابدأ بإضافة مشاريعك المنجزة لعرض خبرتك ومهاراتك"
+                      : "Start adding your completed projects to showcase your expertise"}
+                  </p>
+                  <Button className="bg-gradient-to-r from-purple-600 to-fuchsia-600">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {isArabic ? "إضافة أول مشروع" : "Add First Project"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {portfolio.map((item) => (
+                    <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="relative h-48 bg-muted">
+                        {item.images?.[0] ? (
+                          <img
+                            src={item.images[0]}
+                            alt={isArabic ? item.titleAr : item.titleEn}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="absolute top-2 right-2 flex gap-2">
+                          {!item.isPublished && (
+                            <Badge variant="secondary">{isArabic ? "مسودة" : "Draft"}</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <CardContent className="p-4">
+                        <h4 className="font-bold text-lg mb-2 line-clamp-1">
+                          {isArabic ? item.titleAr : item.titleEn}
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {isArabic ? item.descriptionAr : item.descriptionEn}
+                        </p>
+                        {item.skills && item.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {item.skills.slice(0, 3).map((skill: string, idx: number) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {item.skills.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{item.skills.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{item.viewCount || 0}</span>
+                          </div>
+                          {item.completionDate && (
+                            <span>{new Date(item.completionDate).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1">
+                            <Edit className="h-4 w-4 mr-1" />
+                            {isArabic ? "تعديل" : "Edit"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deletePortfolioItem(item.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
