@@ -17,7 +17,7 @@ export default function BuyerProjectsDashboard() {
   const [analytics, setAnalytics] = useState<any>(null)
   const [projects, setProjects] = useState<any[]>([])
 
-  useEffect() => {
+  useEffect(() => {
     loadData()
   }, [])
 
