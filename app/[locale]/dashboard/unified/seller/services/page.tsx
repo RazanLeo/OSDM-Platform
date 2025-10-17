@@ -35,6 +35,15 @@ import {
   Edit,
 } from "lucide-react"
 import Link from "next/link"
+import { ServicePackagesEditor } from "@/components/service-packages-editor"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 export default function SellerServicesDashboard() {
   const locale = useLocale()
@@ -45,6 +54,7 @@ export default function SellerServicesDashboard() {
   const [orders, setOrders] = useState<any[]>([])
   const [portfolio, setPortfolio] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedServiceForPackages, setSelectedServiceForPackages] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -319,9 +329,42 @@ export default function SellerServicesDashboard() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm">
-                            {isArabic ? "تعديل" : "Edit"}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedServiceForPackages(service.id)}
+                                >
+                                  <Package className="h-4 w-4 mr-1" />
+                                  {isArabic ? "الباقات" : "Packages"}
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>
+                                    {isArabic ? "إدارة باقات الخدمة" : "Manage Service Packages"}
+                                  </DialogTitle>
+                                  <DialogDescription>
+                                    {isArabic ? service.titleAr : service.titleEn}
+                                  </DialogDescription>
+                                </DialogHeader>
+                                {selectedServiceForPackages && (
+                                  <ServicePackagesEditor
+                                    serviceId={selectedServiceForPackages}
+                                    locale={locale}
+                                    isArabic={isArabic}
+                                    onSave={() => loadData()}
+                                  />
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4 mr-1" />
+                              {isArabic ? "تعديل" : "Edit"}
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
