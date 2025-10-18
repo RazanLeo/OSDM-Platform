@@ -285,12 +285,12 @@ export function ProjectsMarketplace() {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <FolderKanban className="h-8 w-8" />
-          {isRTL ? "سوق المشاريع والعمل الحر" : "Freelance Projects Market"}
+          {isRTL ? "سوق فرص العمل الحر - Upwork + Mostaql + Bahr" : "Freelance Projects Market - Upwork + Mostaql + Bahr"}
         </h1>
         <p className="text-muted-foreground mt-2">
           {isRTL
-            ? "تصفح مشاريع العمل الحر وقدم عروضك التنافسية"
-            : "Browse freelance projects and submit your competitive proposals"}
+            ? "تصفح مشاريع العمل الحر وقدم عروضك التنافسية - دمج Upwork و Mostaql و Bahr"
+            : "Browse freelance projects and submit your competitive proposals - Upwork + Mostaql + Bahr merged"}
         </p>
       </div>
 
