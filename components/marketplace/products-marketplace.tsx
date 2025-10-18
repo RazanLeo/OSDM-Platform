@@ -119,12 +119,12 @@ export function ProductsMarketplace() {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Package className="h-8 w-8" />
-          {isRTL ? "سوق المنتجات الرقمية الجاهزة" : "Ready-Made Digital Products Market"}
+          {isRTL ? "سوق المنتجات الرقمية الجاهزة - Gumroad + Picalica" : "Ready Digital Products - Gumroad + Picalica"}
         </h1>
         <p className="text-muted-foreground mt-2">
           {isRTL
-            ? "اكتشف آلاف المنتجات الرقمية الجاهزة للتحميل الفوري"
-            : "Discover thousands of digital products ready for instant download"}
+            ? "منتجات رقمية جاهزة للتحميل الفوري - دمج Gumroad و Picalica"
+            : "Ready digital products for instant download - Gumroad + Picalica merged"}
         </p>
       </div>
 

@@ -338,12 +338,12 @@ export function ServicesMarketplace() {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Briefcase className="h-8 w-8" />
-          {isRTL ? "سوق الخدمات المخصصة" : "Custom Services Market"}
+          {isRTL ? "سوق الخدمات الرقمية المتخصصة - Fiverr + Khamsat" : "Custom Digital Services - Fiverr + Khamsat"}
         </h1>
         <p className="text-muted-foreground mt-2">
           {isRTL
-            ? "احصل على خدمات مخصصة من محترفين موثوقين بباقات مرنة"
-            : "Get custom services from trusted professionals with flexible packages"}
+            ? "خدمات رقمية متخصصة بباقات مرنة - دمج Fiverr و خمسات"
+            : "Specialized digital services with flexible packages - Fiverr + Khamsat merged"}
         </p>
       </div>
 
