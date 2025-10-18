@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db"
 // GET: Get single product details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,7 +18,7 @@ export async function GET(
       )
     }
 
-    const { productId } = params
+    const { id: productId } = await params
 
     const product = await prisma.readyProduct.findFirst({
       where: {
@@ -68,7 +68,7 @@ export async function GET(
 // PATCH: Update product
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -80,7 +80,7 @@ export async function PATCH(
       )
     }
 
-    const { productId } = params
+    const { id: productId } = await params
     const data = await request.json()
 
     // Check if product belongs to seller
@@ -156,7 +156,7 @@ export async function PATCH(
 // DELETE: Soft delete product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -168,7 +168,7 @@ export async function DELETE(
       )
     }
 
-    const { productId } = params
+    const { id: productId } = await params
 
     // Check if product belongs to seller
     const product = await prisma.readyProduct.findFirst({

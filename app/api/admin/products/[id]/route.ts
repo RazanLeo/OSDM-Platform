@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 // Update product status (approve, reject)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,7 +15,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { productId } = params
+    const { id: productId } = await params
     const body = await request.json()
     const { action, reason } = body
 
@@ -94,7 +94,7 @@ export async function PATCH(
 // Delete product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -103,7 +103,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { productId } = params
+    const { id: productId } = await params
 
     // Soft delete by changing status
     await prisma.readyProduct.update({
