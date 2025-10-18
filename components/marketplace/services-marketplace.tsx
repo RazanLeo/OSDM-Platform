@@ -81,10 +81,58 @@ export function ServicesMarketplace() {
   useEffect(() => {
     const fetchServices = async () => {
       setLoading(true)
-      await new Promise((resolve) => setTimeout(resolve, 500))
 
-      // Mock data - في الواقع سيتم جلبها من API
-      const mockServices: Service[] = [
+      try {
+        const params = new URLSearchParams()
+
+        if (searchQuery) params.append('search', searchQuery)
+        if (selectedCategories.length > 0) {
+          params.append('categoryId', selectedCategories.join(','))
+        }
+        if (sortBy) params.append('sortBy', sortBy)
+        params.append('minPrice', priceRange[0].toString())
+        params.append('maxPrice', priceRange[1].toString())
+
+        const response = await fetch(`/api/services?${params.toString()}`)
+        const data = await response.json()
+
+        if (data.success && data.data) {
+          setServices(data.data.map((s: any) => ({
+            id: s.id,
+            titleAr: s.titleAr,
+            titleEn: s.titleEn,
+            descriptionAr: s.descriptionAr,
+            descriptionEn: s.descriptionEn,
+            seller: {
+              id: s.User?.id || '',
+              name: s.User?.fullName || s.User?.username || 'Unknown',
+              avatar: s.User?.avatar,
+              rating: parseFloat(s.User?.averageRating) || 0,
+              totalOrders: s.User?.totalOrders || 0,
+            },
+            categorySlug: s.ServiceCategory?.slug || 'uncategorized',
+            packages: {
+              basic: s.ServicePackage?.find((p: any) => p.tier === 'BASIC') || {
+                nameAr: 'باقة أساسية',
+                nameEn: 'Basic',
+                price: s.basePrice || 0,
+                deliveryDays: s.deliveryDays || 3,
+                featuresAr: [],
+                featuresEn: [],
+              },
+              standard: s.ServicePackage?.find((p: any) => p.tier === 'STANDARD'),
+              premium: s.ServicePackage?.find((p: any) => p.tier === 'PREMIUM'),
+            },
+            rating: parseFloat(s.averageRating) || 0,
+            totalOrders: s.orderCount || 0,
+            thumbnail: s.thumbnail || '/placeholder.jpg',
+          })))
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error)
+
+        // Mock data fallback - في الواقع سيتم جلبها من API
+        const mockServices: Service[] = [
         {
           id: "1",
           titleAr: "تصميم شعار احترافي مع هوية بصرية متكاملة",
@@ -259,8 +307,10 @@ export function ServicesMarketplace() {
         },
       ]
 
-      setServices(mockServices)
-      setLoading(false)
+        setServices(mockServices)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchServices()

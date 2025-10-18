@@ -52,104 +52,46 @@ export function ProductsMarketplace() {
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true)
-      await new Promise((resolve) => setTimeout(resolve, 500))
 
-      // Mock data - في الواقع سيتم جلبها من API
-      const mockProducts: Product[] = [
-        {
-          id: "1",
-          titleAr: "كتاب تعلم البرمجة بلغة بايثون - من الصفر",
-          titleEn: "Learn Python Programming - From Scratch",
-          descriptionAr: "كتاب شامل يغطي أساسيات ومتقدمات لغة بايثون مع أمثلة عملية",
-          descriptionEn: "Comprehensive book covering Python basics and advanced topics with practical examples",
-          price: 199,
-          thumbnail: "/placeholder.jpg",
-          rating: 4.8,
-          sales: 523,
-          seller: {
-            name: "أحمد المبرمج",
-          },
-          categorySlug: "ebooks",
-        },
-        {
-          id: "2",
-          titleAr: "قوالب Canva احترافية - 100 تصميم",
-          titleEn: "Professional Canva Templates - 100 Designs",
-          descriptionAr: "مجموعة من 100 تصميم احترافي جاهز للاستخدام في Canva",
-          descriptionEn: "Collection of 100 professional ready-to-use Canva designs",
-          price: 149,
-          thumbnail: "/placeholder.jpg",
-          rating: 4.9,
-          sales: 412,
-          seller: {
-            name: "سارة المصممة",
-          },
-          categorySlug: "canva-templates",
-        },
-        {
-          id: "3",
-          titleAr: "دورة تصميم UI/UX كاملة - فيديو",
-          titleEn: "Complete UI/UX Design Course - Video",
-          descriptionAr: "دورة شاملة في تصميم واجهات المستخدم وتجربة المستخدم",
-          descriptionEn: "Comprehensive course in UI/UX design",
-          price: 399,
-          thumbnail: "/placeholder.jpg",
-          rating: 5.0,
-          sales: 891,
-          seller: {
-            name: "محمد التصميم",
-          },
-          categorySlug: "video-courses",
-        },
-        {
-          id: "4",
-          titleAr: "قوالب إكسل محاسبية - 50 نموذج",
-          titleEn: "Accounting Excel Templates - 50 Forms",
-          descriptionAr: "مجموعة من 50 قالب إكسل جاهز للمحاسبة والإدارة المالية",
-          descriptionEn: "Collection of 50 ready-made Excel templates for accounting",
-          price: 99,
-          thumbnail: "/placeholder.jpg",
-          rating: 4.6,
-          sales: 234,
-          seller: {
-            name: "خالد المحاسب",
-          },
-          categorySlug: "excel-templates",
-        },
-        {
-          id: "5",
-          titleAr: "مكتبة أيقونات SVG - 500+ أيقونة",
-          titleEn: "SVG Icons Library - 500+ Icons",
-          descriptionAr: "مكتبة شاملة تحتوي على أكثر من 500 أيقونة بصيغة SVG",
-          descriptionEn: "Comprehensive library with 500+ SVG icons",
-          price: 79,
-          thumbnail: "/placeholder.jpg",
-          rating: 4.7,
-          sales: 678,
-          seller: {
-            name: "نورة التصميم",
-          },
-          categorySlug: "icons",
-        },
-        {
-          id: "6",
-          titleAr: "قوالب مواقع HTML/CSS جاهزة",
-          titleEn: "Ready HTML/CSS Website Templates",
-          descriptionAr: "مجموعة من قوالب المواقع الجاهزة باستخدام HTML و CSS",
-          descriptionEn: "Collection of ready website templates using HTML & CSS",
-          price: 249,
-          thumbnail: "/placeholder.jpg",
-          rating: 4.8,
-          sales: 345,
-          seller: {
-            name: "عمر المطور",
-          },
-          categorySlug: "html-css-templates",
-        },
-      ]
+      try {
+        const params = new URLSearchParams()
 
-      setProducts(mockProducts)
-      setLoading(false)
+        if (searchQuery) params.append('search', searchQuery)
+        if (selectedCategories.length > 0) {
+          params.append('categoryId', selectedCategories.join(','))
+        }
+        if (sortBy) params.append('sortBy', sortBy)
+        params.append('minPrice', priceRange[0].toString())
+        params.append('maxPrice', priceRange[1].toString())
+
+        const response = await fetch(`/api/products?${params.toString()}`)
+        const data = await response.json()
+
+        if (data.success && data.data) {
+          const formattedProducts: Product[] = data.data.map((p: any) => ({
+            id: p.id,
+            titleAr: p.titleAr,
+            titleEn: p.titleEn,
+            descriptionAr: p.descriptionAr,
+            descriptionEn: p.descriptionEn,
+            price: parseFloat(p.price),
+            thumbnail: p.thumbnail || "/placeholder.jpg",
+            rating: parseFloat(p.averageRating) || 0,
+            sales: p.downloadCount || 0,
+            seller: {
+              name: p.User?.fullName || p.User?.username || "Unknown",
+              avatar: p.User?.avatar,
+            },
+            categorySlug: p.ProductCategory?.slug || "uncategorized",
+          }))
+          setProducts(formattedProducts)
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error)
+        setProducts([])
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchProducts()
