@@ -69,10 +69,57 @@ export function ProjectsMarketplace() {
   useEffect(() => {
     const fetchProjects = async () => {
       setLoading(true)
-      await new Promise((resolve) => setTimeout(resolve, 500))
 
-      // Mock data - في الواقع سيتم جلبها من API
-      const mockProjects: Project[] = [
+      try {
+        const params = new URLSearchParams()
+
+        if (searchQuery) params.append('search', searchQuery)
+        if (selectedCategories.length > 0) {
+          params.append('categoryId', selectedCategories.join(','))
+        }
+        if (sortBy) params.append('sortBy', sortBy)
+        if (budgetFilter !== 'all') {
+          const [min, max] = budgetFilter.split('-')
+          if (min) params.append('minBudget', min)
+          if (max) params.append('maxBudget', max)
+        }
+        params.append('status', 'OPEN')
+
+        const response = await fetch(`/api/projects?${params.toString()}`)
+        const data = await response.json()
+
+        if (data.success && data.data) {
+          const formattedProjects: Project[] = data.data.map((p: any) => ({
+            id: p.id,
+            titleAr: p.titleAr,
+            titleEn: p.titleEn,
+            descriptionAr: p.descriptionAr,
+            descriptionEn: p.descriptionEn,
+            client: {
+              id: p.User?.id || '',
+              name: p.User?.fullName || p.User?.username || 'Unknown',
+              country: p.User?.country || 'Saudi Arabia',
+              totalProjects: p.User?.totalProjects || 0,
+              successRate: p.User?.successRate || 0,
+            },
+            budget: {
+              min: parseFloat(p.budgetMin) || 0,
+              max: parseFloat(p.budgetMax) || 0,
+            },
+            duration: p.durationDays || 30,
+            categorySlug: p.ProjectCategory?.slug || 'uncategorized',
+            skillsRequired: p.skillsRequired ? p.skillsRequired.split(',') : [],
+            proposalsCount: p.proposalCount || 0,
+            status: p.status,
+            postedAt: p.createdAt,
+          }))
+          setProjects(formattedProjects)
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error)
+
+        // Mock data fallback - في الواقع سيتم جلبها من API
+        const mockProjects: Project[] = [
         {
           id: "1",
           titleAr: "تطوير تطبيق جوال للتجارة الإلكترونية - iOS و Android",
@@ -195,8 +242,10 @@ export function ProjectsMarketplace() {
         },
       ]
 
-      setProjects(mockProjects)
-      setLoading(false)
+        setProjects(mockProjects)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchProjects()
